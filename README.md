@@ -29,7 +29,7 @@ A professional offline image converter with batch processing, watermarks, resize
 
 ### Pre-built Binaries
 
-Download the latest release from the [Releases](releases) page:
+Download the latest release from the [Releases]([releases](https://github.com/SysAdminDoc/ImageForge/releases/tag/v.1.0)) page:
 - **Windows**: `ImageForge-Pro-Setup-2.0.0.exe` (installer) or `ImageForge-Pro-2.0.0-portable.exe`
 - **macOS**: `ImageForge-Pro-2.0.0.dmg`
 - **Linux**: `ImageForge-Pro-2.0.0.AppImage` or `.deb`
