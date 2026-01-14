@@ -1,0 +1,1880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;">
+    <title>ImageForge Pro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #020617;
+            --bg-secondary: #0f172a;
+            --bg-tertiary: #1e293b;
+            --bg-hover: #334155;
+            --green-accent: #22c55e;
+            --green-hover: #16a34a;
+            --green-dim: #166534;
+            --blue-accent: #60a5fa;
+            --blue-hover: #3b82f6;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border-color: #334155;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #22c55e;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* Custom Title Bar */
+        .title-bar {
+            background: var(--bg-secondary);
+            height: 40px;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            -webkit-app-region: drag;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .title-bar-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            -webkit-app-region: no-drag;
+        }
+
+        .app-icon {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, var(--green-accent), var(--blue-accent));
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .app-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .app-version {
+            font-size: 10px;
+            color: var(--text-muted);
+            background: var(--bg-tertiary);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .output-folder-indicator {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: var(--text-muted);
+            -webkit-app-region: no-drag;
+        }
+
+        .output-folder-indicator svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .output-folder-path {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Main Layout */
+        .main-container {
+            display: grid;
+            grid-template-columns: 300px 1fr 280px;
+            height: calc(100vh - 40px);
+        }
+
+        /* Settings Panel */
+        .settings-panel {
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .panel-section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .section-title svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 8px 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--green-accent);
+            box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.15);
+        }
+
+        .form-control option {
+            background: var(--bg-tertiary);
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-suffix {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .input-group .form-control {
+            padding-right: 32px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 12px;
+        }
+
+        .checkbox-group:hover {
+            background: var(--bg-hover);
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--green-accent);
+            cursor: pointer;
+        }
+
+        .checkbox-group span {
+            color: var(--text-secondary);
+        }
+
+        .slider-container {
+            padding: 2px 0;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .slider-value {
+            background: var(--bg-tertiary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            color: var(--green-accent);
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--green-accent);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .color-picker-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .color-picker-row input[type="color"] {
+            width: 36px;
+            height: 32px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: var(--bg-tertiary);
+            padding: 2px;
+        }
+
+        .color-picker-row input[type="text"] {
+            flex: 1;
+        }
+
+        /* Main Panel */
+        .main-panel {
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .toolbar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 10px 16px;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .btn-primary {
+            background: var(--green-accent);
+            color: var(--bg-primary);
+        }
+
+        .btn-primary:hover {
+            background: var(--green-hover);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-hover);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-icon {
+            padding: 6px;
+            min-width: 28px;
+        }
+
+        .toolbar-separator {
+            width: 1px;
+            height: 20px;
+            background: var(--border-color);
+            margin: 0 4px;
+        }
+
+        .toolbar-spacer {
+            flex: 1;
+        }
+
+        .image-count {
+            font-size: 11px;
+            color: var(--text-muted);
+            padding: 4px 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        /* Drop Zone */
+        .drop-zone-container {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            cursor: pointer;
+            background: var(--bg-secondary);
+        }
+
+        .drop-zone:hover, .drop-zone.drag-over {
+            border-color: var(--green-accent);
+            background: rgba(34, 197, 94, 0.05);
+        }
+
+        .drop-zone-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--bg-tertiary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .drop-zone-icon svg {
+            width: 32px;
+            height: 32px;
+            color: var(--green-accent);
+        }
+
+        .drop-zone h3 {
+            font-size: 16px;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        .drop-zone p {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .supported-formats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            justify-content: center;
+            max-width: 350px;
+        }
+
+        .format-badge {
+            background: var(--bg-tertiary);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        /* Image Grid */
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+        }
+
+        .image-card {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .image-card:hover {
+            border-color: var(--blue-accent);
+        }
+
+        .image-card.selected {
+            border-color: var(--green-accent);
+            box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3);
+        }
+
+        .image-preview {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            background: var(--bg-tertiary);
+            display: block;
+        }
+
+        .image-info {
+            padding: 10px;
+        }
+
+        .image-name {
+            font-size: 11px;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 2px;
+        }
+
+        .image-meta {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .image-checkbox {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            width: 20px;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--border-color);
+            transition: all 0.2s;
+        }
+
+        .image-checkbox.checked {
+            background: var(--green-accent);
+            border-color: var(--green-accent);
+        }
+
+        .image-checkbox svg {
+            width: 12px;
+            height: 12px;
+            color: white;
+            opacity: 0;
+        }
+
+        .image-checkbox.checked svg {
+            opacity: 1;
+        }
+
+        .image-remove {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 20px;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.2s;
+        }
+
+        .image-card:hover .image-remove {
+            opacity: 1;
+        }
+
+        .image-remove:hover {
+            background: var(--danger);
+        }
+
+        .image-remove svg {
+            width: 12px;
+            height: 12px;
+            color: white;
+        }
+
+        /* Output Panel */
+        .output-panel {
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .output-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .output-header h3 {
+            font-size: 13px;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .output-header p {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .output-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .output-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            margin-bottom: 6px;
+        }
+
+        .output-thumb {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
+            object-fit: cover;
+            background: var(--bg-hover);
+        }
+
+        .output-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .output-name {
+            font-size: 11px;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .output-status {
+            font-size: 10px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 2px;
+        }
+
+        .status-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+        }
+
+        .status-dot.success { background: var(--success); }
+
+        .size-change {
+            font-weight: 500;
+        }
+
+        .size-change.reduced { color: var(--green-accent); }
+        .size-change.increased { color: var(--danger); }
+
+        .output-download {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: var(--green-accent);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .output-download:hover {
+            background: var(--green-hover);
+        }
+
+        .output-download svg {
+            width: 14px;
+            height: 14px;
+            color: var(--bg-primary);
+        }
+
+        .output-actions {
+            padding: 12px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .output-actions .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* Progress */
+        .progress-container {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-color);
+            display: none;
+        }
+
+        .progress-container.active {
+            display: block;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--green-accent), var(--blue-accent));
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-header h3 {
+            font-size: 14px;
+        }
+
+        .modal-close {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: var(--bg-tertiary);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            background: var(--danger);
+        }
+
+        .modal-close svg {
+            width: 14px;
+            height: 14px;
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        /* Shortcuts */
+        .shortcut-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 10px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+
+        .shortcut-key {
+            color: var(--green-accent);
+            font-family: monospace;
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .toast {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(100%); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .toast.success .toast-icon { color: var(--success); }
+        .toast.error .toast-icon { color: var(--danger); }
+        .toast.warning .toast-icon { color: var(--warning); }
+
+        .toast-icon { width: 18px; height: 18px; }
+        .toast-message { font-size: 12px; }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 12px;
+        }
+
+        .tab {
+            padding: 8px 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab:hover { color: var(--text-secondary); }
+        .tab.active { color: var(--green-accent); border-bottom-color: var(--green-accent); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Watermark preview */
+        .watermark-preview {
+            width: 100%;
+            height: 80px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+
+        .watermark-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 32px 16px;
+            color: var(--text-muted);
+        }
+
+        .empty-state svg {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        .empty-state p { font-size: 12px; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background: var(--bg-hover); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <!-- Title Bar -->
+    <div class="title-bar">
+        <div class="title-bar-content">
+            <div class="app-icon">IF</div>
+            <span class="app-title">ImageForge Pro</span>
+            <span class="app-version">v2.0.0</span>
+        </div>
+        <div class="output-folder-indicator" id="outputFolderIndicator" style="display: none;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+            <span class="output-folder-path" id="outputFolderPath"></span>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Settings Panel -->
+        <div class="settings-panel">
+            <!-- Output Format -->
+            <div class="panel-section">
+                <div class="section-title">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    Output Format
+                </div>
+                <div class="form-group">
+                    <label>Convert To</label>
+                    <select class="form-control" id="outputFormat">
+                        <option value="jpeg">JPEG (.jpg)</option>
+                        <option value="png">PNG (.png)</option>
+                        <option value="webp">WebP (.webp)</option>
+                        <option value="gif">GIF (.gif)</option>
+                        <option value="bmp">BMP (.bmp)</option>
+                        <option value="ico">ICO (.ico)</option>
+                        <option value="avif">AVIF (.avif)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="qualityGroup">
+                    <div class="slider-container">
+                        <div class="slider-header">
+                            <label>Quality</label>
+                            <span class="slider-value" id="qualityValue">85%</span>
+                        </div>
+                        <input type="range" id="quality" min="1" max="100" value="85">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resize -->
+            <div class="panel-section">
+                <div class="section-title">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                    Resize
+                </div>
+                <label class="checkbox-group">
+                    <input type="checkbox" id="enableResize">
+                    <span>Enable Resize</span>
+                </label>
+                <div id="resizeOptions" style="margin-top: 10px; display: none;">
+                    <div class="form-group">
+                        <label>Mode</label>
+                        <select class="form-control" id="resizeMode">
+                            <option value="dimensions">By Dimensions</option>
+                            <option value="percentage">By Percentage</option>
+                            <option value="maxWidth">Max Width</option>
+                            <option value="maxHeight">Max Height</option>
+                        </select>
+                    </div>
+                    <div class="input-row" id="dimensionInputs">
+                        <div class="input-group">
+                            <label>Width</label>
+                            <input type="number" class="form-control" id="resizeWidth" placeholder="Auto">
+                            <span class="input-suffix">px</span>
+                        </div>
+                        <div class="input-group">
+                            <label>Height</label>
+                            <input type="number" class="form-control" id="resizeHeight" placeholder="Auto">
+                            <span class="input-suffix">px</span>
+                        </div>
+                    </div>
+                    <div class="form-group" id="percentageInput" style="display: none;">
+                        <div class="input-group">
+                            <label>Scale</label>
+                            <input type="number" class="form-control" id="resizePercentage" value="50" min="1" max="500">
+                            <span class="input-suffix">%</span>
+                        </div>
+                    </div>
+                    <label class="checkbox-group">
+                        <input type="checkbox" id="maintainAspect" checked>
+                        <span>Maintain Aspect Ratio</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Transform -->
+            <div class="panel-section">
+                <div class="section-title">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    Transform
+                </div>
+                <div class="form-group">
+                    <label>Rotation</label>
+                    <select class="form-control" id="rotation">
+                        <option value="0">None</option>
+                        <option value="90">90° Clockwise</option>
+                        <option value="180">180°</option>
+                        <option value="270">90° Counter-clockwise</option>
+                    </select>
+                </div>
+                <div class="input-row">
+                    <label class="checkbox-group">
+                        <input type="checkbox" id="flipH">
+                        <span>Flip H</span>
+                    </label>
+                    <label class="checkbox-group">
+                        <input type="checkbox" id="flipV">
+                        <span>Flip V</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Watermark -->
+            <div class="panel-section">
+                <div class="section-title">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                    Watermark
+                </div>
+                <label class="checkbox-group">
+                    <input type="checkbox" id="enableWatermark">
+                    <span>Add Watermark</span>
+                </label>
+                <div id="watermarkOptions" style="margin-top: 10px; display: none;">
+                    <div class="tabs">
+                        <div class="tab active" data-tab="textWatermark">Text</div>
+                        <div class="tab" data-tab="imageWatermark">Image</div>
+                    </div>
+                    <div class="tab-content active" id="textWatermark">
+                        <div class="form-group">
+                            <label>Text</label>
+                            <input type="text" class="form-control" id="watermarkText" placeholder="© Your Name">
+                        </div>
+                        <div class="form-group">
+                            <label>Font Size</label>
+                            <input type="number" class="form-control" id="watermarkFontSize" value="24" min="8" max="200">
+                        </div>
+                        <div class="form-group">
+                            <label>Color</label>
+                            <div class="color-picker-row">
+                                <input type="color" id="watermarkColor" value="#ffffff">
+                                <input type="text" class="form-control" id="watermarkColorText" value="#ffffff">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label>Opacity</label>
+                                    <span class="slider-value" id="watermarkOpacityValue">50%</span>
+                                </div>
+                                <input type="range" id="watermarkOpacity" min="1" max="100" value="50">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-content" id="imageWatermark">
+                        <div class="watermark-preview" id="watermarkImagePreview">
+                            <span style="color: var(--text-muted); font-size: 11px;">No image selected</span>
+                        </div>
+                        <button class="btn btn-secondary" style="width: 100%; font-size: 11px;" onclick="selectWatermarkImage()">
+                            Select Watermark Image
+                        </button>
+                        <input type="file" id="watermarkImageInput" accept="image/*" style="display: none;">
+                        <div class="form-group" style="margin-top: 10px;">
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label>Size</label>
+                                    <span class="slider-value" id="watermarkSizeValue">20%</span>
+                                </div>
+                                <input type="range" id="watermarkSize" min="5" max="50" value="20">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-top: 10px;">
+                        <label>Position</label>
+                        <select class="form-control" id="watermarkPosition">
+                            <option value="bottomRight">Bottom Right</option>
+                            <option value="bottomLeft">Bottom Left</option>
+                            <option value="topRight">Top Right</option>
+                            <option value="topLeft">Top Left</option>
+                            <option value="center">Center</option>
+                            <option value="tile">Tile (Repeat)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Naming -->
+            <div class="panel-section">
+                <div class="section-title">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                    Output Naming
+                </div>
+                <div class="form-group">
+                    <label>Pattern</label>
+                    <select class="form-control" id="namingPattern">
+                        <option value="original">Keep Original Name</option>
+                        <option value="suffix">Add Suffix</option>
+                        <option value="prefix">Add Prefix</option>
+                        <option value="custom">Custom Pattern</option>
+                    </select>
+                </div>
+                <div class="form-group" id="namingExtra" style="display: none;">
+                    <label id="namingExtraLabel">Suffix</label>
+                    <input type="text" class="form-control" id="namingValue" placeholder="_converted">
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Panel -->
+        <div class="main-panel">
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="openFiles()">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                    Add Images
+                </button>
+                <button class="btn btn-secondary" onclick="openFolder()">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                    Add Folder
+                </button>
+                <button class="btn btn-secondary btn-icon" onclick="pasteFromClipboard()" title="Paste (Ctrl+V)">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                </button>
+                <div class="toolbar-separator"></div>
+                <button class="btn btn-secondary" onclick="selectAll()">Select All</button>
+                <button class="btn btn-secondary" onclick="clearSelection()">Deselect</button>
+                <div class="toolbar-separator"></div>
+                <button class="btn btn-danger" onclick="removeSelected()">Remove</button>
+                <button class="btn btn-danger" onclick="clearAll()">Clear All</button>
+                <div class="toolbar-spacer"></div>
+                <span class="image-count" id="imageCount">0 images</span>
+                <button class="btn btn-primary" onclick="convertImages()">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    Convert All
+                </button>
+            </div>
+
+            <div class="drop-zone-container">
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                    </div>
+                    <h3>Drop images here</h3>
+                    <p>or use File menu • Ctrl+V to paste</p>
+                    <div class="supported-formats">
+                        <span class="format-badge">JPG</span>
+                        <span class="format-badge">PNG</span>
+                        <span class="format-badge">WebP</span>
+                        <span class="format-badge">GIF</span>
+                        <span class="format-badge">BMP</span>
+                        <span class="format-badge">SVG</span>
+                        <span class="format-badge">ICO</span>
+                        <span class="format-badge">TIFF</span>
+                        <span class="format-badge">HEIC</span>
+                        <span class="format-badge">AVIF</span>
+                    </div>
+                </div>
+                <div class="image-grid" id="imageGrid" style="display: none;"></div>
+            </div>
+
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-header">
+                    <span id="progressText">Converting...</span>
+                    <span id="progressPercent">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Output Panel -->
+        <div class="output-panel">
+            <div class="output-header">
+                <h3>Converted Files</h3>
+                <p id="outputCount">0 files ready</p>
+            </div>
+            <div class="output-list" id="outputList">
+                <div class="empty-state">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+                    <p>Converted images will appear here</p>
+                </div>
+            </div>
+            <div class="output-actions">
+                <button class="btn btn-primary" onclick="saveAllToFolder()" id="saveAllBtn" disabled>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                    Save All to Folder
+                </button>
+                <button class="btn btn-secondary" onclick="saveAsZip()" id="saveZipBtn" disabled>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Save as ZIP
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shortcuts Modal -->
+    <div class="modal-overlay" id="shortcutsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Keyboard Shortcuts</h3>
+                <button class="modal-close" onclick="closeModal('shortcutsModal')">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="shortcut-row"><span>Open images</span><span class="shortcut-key">Ctrl+O</span></div>
+                <div class="shortcut-row"><span>Open folder</span><span class="shortcut-key">Ctrl+Shift+O</span></div>
+                <div class="shortcut-row"><span>Paste from clipboard</span><span class="shortcut-key">Ctrl+V</span></div>
+                <div class="shortcut-row"><span>Select all</span><span class="shortcut-key">Ctrl+A</span></div>
+                <div class="shortcut-row"><span>Deselect all</span><span class="shortcut-key">Ctrl+D</span></div>
+                <div class="shortcut-row"><span>Convert all</span><span class="shortcut-key">Ctrl+Enter</span></div>
+                <div class="shortcut-row"><span>Remove selected</span><span class="shortcut-key">Delete</span></div>
+                <div class="shortcut-row"><span>Clear all</span><span class="shortcut-key">Ctrl+Shift+Del</span></div>
+                <div class="shortcut-row"><span>Save all</span><span class="shortcut-key">Ctrl+S</span></div>
+                <div class="shortcut-row"><span>Save as ZIP</span><span class="shortcut-key">Ctrl+Shift+S</span></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('shortcutsModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // State
+        let images = [];
+        let convertedImages = [];
+        let watermarkImage = null;
+        let outputFolder = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+            setupElectronListeners();
+            setupTabs();
+        });
+
+        function setupEventListeners() {
+            // Drop zone
+            const dropZone = document.getElementById('dropZone');
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-over');
+            });
+            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+            dropZone.addEventListener('drop', handleDrop);
+
+            // Sliders
+            document.getElementById('quality').addEventListener('input', (e) => {
+                document.getElementById('qualityValue').textContent = e.target.value + '%';
+            });
+            document.getElementById('watermarkOpacity').addEventListener('input', (e) => {
+                document.getElementById('watermarkOpacityValue').textContent = e.target.value + '%';
+            });
+            document.getElementById('watermarkSize').addEventListener('input', (e) => {
+                document.getElementById('watermarkSizeValue').textContent = e.target.value + '%';
+            });
+
+            // Color sync
+            document.getElementById('watermarkColor').addEventListener('input', (e) => {
+                document.getElementById('watermarkColorText').value = e.target.value;
+            });
+            document.getElementById('watermarkColorText').addEventListener('input', (e) => {
+                if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
+                    document.getElementById('watermarkColor').value = e.target.value;
+                }
+            });
+
+            // Toggles
+            document.getElementById('enableResize').addEventListener('change', (e) => {
+                document.getElementById('resizeOptions').style.display = e.target.checked ? 'block' : 'none';
+            });
+            document.getElementById('enableWatermark').addEventListener('change', (e) => {
+                document.getElementById('watermarkOptions').style.display = e.target.checked ? 'block' : 'none';
+            });
+
+            // Resize mode
+            document.getElementById('resizeMode').addEventListener('change', (e) => {
+                const mode = e.target.value;
+                const dims = document.getElementById('dimensionInputs');
+                const pct = document.getElementById('percentageInput');
+                dims.style.display = mode !== 'percentage' ? 'grid' : 'none';
+                pct.style.display = mode === 'percentage' ? 'block' : 'none';
+            });
+
+            // Naming pattern
+            document.getElementById('namingPattern').addEventListener('change', (e) => {
+                const extra = document.getElementById('namingExtra');
+                const label = document.getElementById('namingExtraLabel');
+                extra.style.display = e.target.value !== 'original' ? 'block' : 'none';
+                if (e.target.value === 'suffix') label.textContent = 'Suffix';
+                else if (e.target.value === 'prefix') label.textContent = 'Prefix';
+                else label.textContent = 'Pattern ({name} for original)';
+            });
+
+            // Output format
+            document.getElementById('outputFormat').addEventListener('change', (e) => {
+                const format = e.target.value;
+                document.getElementById('qualityGroup').style.display = 
+                    ['jpeg', 'webp', 'avif'].includes(format) ? 'block' : 'none';
+            });
+
+            // Watermark image input
+            document.getElementById('watermarkImageInput').addEventListener('change', (e) => {
+                if (e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        watermarkImage = new Image();
+                        watermarkImage.src = event.target.result;
+                        document.getElementById('watermarkImagePreview').innerHTML = 
+                            `<img src="${event.target.result}" alt="Watermark">`;
+                    };
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 'a' && images.length > 0) {
+                    e.preventDefault();
+                    selectAll();
+                } else if (e.ctrlKey && e.key === 'd') {
+                    e.preventDefault();
+                    clearSelection();
+                } else if (e.key === 'Delete' && !e.ctrlKey && !e.shiftKey) {
+                    removeSelected();
+                }
+            });
+
+            // Paste
+            document.addEventListener('paste', handlePaste);
+        }
+
+        function setupElectronListeners() {
+            if (!window.electronAPI) return;
+
+            window.electronAPI.onFilesSelected(addFiles);
+            window.electronAPI.onOutputFolderSet((folder) => {
+                outputFolder = folder;
+                document.getElementById('outputFolderIndicator').style.display = 'flex';
+                document.getElementById('outputFolderPath').textContent = folder;
+                showToast('Output folder set', 'success');
+            });
+            window.electronAPI.onMenuSelectAll(selectAll);
+            window.electronAPI.onMenuDeselect(clearSelection);
+            window.electronAPI.onMenuRemoveSelected(removeSelected);
+            window.electronAPI.onMenuClearAll(clearAll);
+            window.electronAPI.onMenuConvert(convertImages);
+            window.electronAPI.onMenuSaveAll(saveAllToFolder);
+            window.electronAPI.onMenuSaveZip(saveAsZip);
+            window.electronAPI.onMenuShortcuts(() => {
+                document.getElementById('shortcutsModal').classList.add('active');
+            });
+        }
+
+        function setupTabs() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.dataset.tab;
+                    tab.parentElement.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    tab.parentElement.parentElement.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+        }
+
+        async function openFiles() {
+            if (window.electronAPI) {
+                await window.electronAPI.openFileDialog();
+            }
+        }
+
+        async function openFolder() {
+            if (window.electronAPI) {
+                await window.electronAPI.openFolderDialog();
+            }
+        }
+
+        function selectWatermarkImage() {
+            document.getElementById('watermarkImageInput').click();
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            document.getElementById('dropZone').classList.remove('drag-over');
+            const files = Array.from(e.dataTransfer.files);
+            processDroppedFiles(files);
+        }
+
+        async function handlePaste(e) {
+            const items = e.clipboardData?.items;
+            if (items) {
+                for (let item of items) {
+                    if (item.type.startsWith('image/')) {
+                        const file = item.getAsFile();
+                        if (file) processDroppedFiles([file]);
+                    }
+                }
+            }
+        }
+
+        async function pasteFromClipboard() {
+            try {
+                const items = await navigator.clipboard.read();
+                for (const item of items) {
+                    for (const type of item.types) {
+                        if (type.startsWith('image/')) {
+                            const blob = await item.getType(type);
+                            const file = new File([blob], `clipboard-${Date.now()}.png`, { type });
+                            processDroppedFiles([file]);
+                        }
+                    }
+                }
+            } catch (err) {
+                showToast('Unable to access clipboard', 'error');
+            }
+        }
+
+        async function processDroppedFiles(files) {
+            const validFiles = files.filter(f => f.type.startsWith('image/'));
+            if (validFiles.length === 0) return;
+
+            for (const file of validFiles) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        images.push({
+                            id: Date.now() + Math.random(),
+                            name: file.name,
+                            size: file.size,
+                            width: img.width,
+                            height: img.height,
+                            type: file.type,
+                            dataUrl: e.target.result,
+                            selected: false
+                        });
+                        updateUI();
+                    };
+                    img.onerror = () => {
+                        images.push({
+                            id: Date.now() + Math.random(),
+                            name: file.name,
+                            size: file.size,
+                            width: 0,
+                            height: 0,
+                            type: file.type,
+                            dataUrl: e.target.result,
+                            selected: false
+                        });
+                        updateUI();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+            showToast(`Added ${validFiles.length} image(s)`, 'success');
+        }
+
+        function addFiles(files) {
+            for (const file of files) {
+                const img = new Image();
+                img.onload = () => {
+                    images.push({
+                        id: Date.now() + Math.random(),
+                        name: file.name,
+                        path: file.path,
+                        size: file.size,
+                        width: img.width,
+                        height: img.height,
+                        type: file.dataUrl.split(';')[0].split(':')[1],
+                        dataUrl: file.dataUrl,
+                        selected: false
+                    });
+                    updateUI();
+                };
+                img.onerror = () => {
+                    images.push({
+                        id: Date.now() + Math.random(),
+                        name: file.name,
+                        path: file.path,
+                        size: file.size,
+                        width: 0,
+                        height: 0,
+                        type: 'image/unknown',
+                        dataUrl: file.dataUrl,
+                        selected: false
+                    });
+                    updateUI();
+                };
+                img.src = file.dataUrl;
+            }
+            showToast(`Added ${files.length} image(s)`, 'success');
+        }
+
+        function updateUI() {
+            const dropZone = document.getElementById('dropZone');
+            const imageGrid = document.getElementById('imageGrid');
+            
+            if (images.length === 0) {
+                dropZone.style.display = 'flex';
+                imageGrid.style.display = 'none';
+            } else {
+                dropZone.style.display = 'none';
+                imageGrid.style.display = 'grid';
+                renderImageGrid();
+            }
+            document.getElementById('imageCount').textContent = `${images.length} images`;
+        }
+
+        function renderImageGrid() {
+            document.getElementById('imageGrid').innerHTML = images.map(img => `
+                <div class="image-card ${img.selected ? 'selected' : ''}" onclick="toggleSelect(${img.id})">
+                    <div class="image-checkbox ${img.selected ? 'checked' : ''}">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    <button class="image-remove" onclick="removeImage(${img.id}, event)">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                    <img class="image-preview" src="${img.dataUrl}" alt="${img.name}">
+                    <div class="image-info">
+                        <div class="image-name" title="${img.name}">${img.name}</div>
+                        <div class="image-meta">${img.width}×${img.height} • ${formatSize(img.size)}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleSelect(id) {
+            const img = images.find(i => i.id === id);
+            if (img) {
+                img.selected = !img.selected;
+                renderImageGrid();
+            }
+        }
+
+        function selectAll() {
+            images.forEach(i => i.selected = true);
+            renderImageGrid();
+        }
+
+        function clearSelection() {
+            images.forEach(i => i.selected = false);
+            renderImageGrid();
+        }
+
+        function removeImage(id, event) {
+            event.stopPropagation();
+            images = images.filter(i => i.id !== id);
+            updateUI();
+        }
+
+        function removeSelected() {
+            const count = images.filter(i => i.selected).length;
+            if (count === 0) return;
+            images = images.filter(i => !i.selected);
+            updateUI();
+            showToast(`Removed ${count} image(s)`, 'success');
+        }
+
+        function clearAll() {
+            images = [];
+            convertedImages = [];
+            updateUI();
+            updateOutputList();
+        }
+
+        async function convertImages() {
+            if (images.length === 0) {
+                showToast('No images to convert', 'warning');
+                return;
+            }
+
+            const format = document.getElementById('outputFormat').value;
+            const quality = parseInt(document.getElementById('quality').value) / 100;
+            const progress = document.getElementById('progressContainer');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            const progressPercent = document.getElementById('progressPercent');
+
+            progress.classList.add('active');
+            convertedImages = [];
+
+            for (let i = 0; i < images.length; i++) {
+                const img = images[i];
+                const pct = ((i + 1) / images.length) * 100;
+                progressText.textContent = `Converting ${img.name}...`;
+                progressPercent.textContent = Math.round(pct) + '%';
+                progressFill.style.width = pct + '%';
+
+                try {
+                    const converted = await convertImage(img, format, quality);
+                    convertedImages.push(converted);
+                } catch (err) {
+                    console.error(err);
+                    showToast(`Failed: ${img.name}`, 'error');
+                }
+                await new Promise(r => setTimeout(r, 30));
+            }
+
+            progress.classList.remove('active');
+            updateOutputList();
+            document.getElementById('saveAllBtn').disabled = convertedImages.length === 0;
+            document.getElementById('saveZipBtn').disabled = convertedImages.length === 0;
+            showToast(`Converted ${convertedImages.length} image(s)`, 'success');
+        }
+
+        async function convertImage(img, format, quality) {
+            return new Promise((resolve, reject) => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const image = new Image();
+
+                image.onload = () => {
+                    let w = image.width, h = image.height;
+
+                    // Resize
+                    if (document.getElementById('enableResize').checked) {
+                        const mode = document.getElementById('resizeMode').value;
+                        const aspect = document.getElementById('maintainAspect').checked;
+
+                        if (mode === 'dimensions') {
+                            const nw = parseInt(document.getElementById('resizeWidth').value) || w;
+                            const nh = parseInt(document.getElementById('resizeHeight').value) || h;
+                            if (aspect) {
+                                const r = Math.min(nw / w, nh / h);
+                                w = Math.round(w * r);
+                                h = Math.round(h * r);
+                            } else { w = nw; h = nh; }
+                        } else if (mode === 'percentage') {
+                            const p = parseInt(document.getElementById('resizePercentage').value) / 100;
+                            w = Math.round(w * p);
+                            h = Math.round(h * p);
+                        } else if (mode === 'maxWidth') {
+                            const mw = parseInt(document.getElementById('resizeWidth').value);
+                            if (mw && w > mw) { h = Math.round(h * mw / w); w = mw; }
+                        } else if (mode === 'maxHeight') {
+                            const mh = parseInt(document.getElementById('resizeHeight').value);
+                            if (mh && h > mh) { w = Math.round(w * mh / h); h = mh; }
+                        }
+                    }
+
+                    canvas.width = w;
+                    canvas.height = h;
+
+                    // Transform
+                    const rot = parseInt(document.getElementById('rotation').value);
+                    const fh = document.getElementById('flipH').checked;
+                    const fv = document.getElementById('flipV').checked;
+
+                    ctx.save();
+                    if (rot === 90 || rot === 270) { canvas.width = h; canvas.height = w; }
+                    ctx.translate(canvas.width / 2, canvas.height / 2);
+                    ctx.rotate(rot * Math.PI / 180);
+                    ctx.scale(fh ? -1 : 1, fv ? -1 : 1);
+                    if (rot === 90 || rot === 270) ctx.drawImage(image, -h / 2, -w / 2, h, w);
+                    else ctx.drawImage(image, -w / 2, -h / 2, w, h);
+                    ctx.restore();
+
+                    // Watermark
+                    if (document.getElementById('enableWatermark').checked) {
+                        applyWatermark(ctx, canvas.width, canvas.height);
+                    }
+
+                    const mime = getMimeType(format);
+                    const q = ['jpeg', 'webp', 'avif'].includes(format) ? quality : undefined;
+
+                    canvas.toBlob((blob) => {
+                        if (!blob) return reject(new Error('Blob failed'));
+                        const name = generateOutputName(img.name, format);
+                        const url = URL.createObjectURL(blob);
+                        
+                        // Convert blob to array buffer for saving
+                        blob.arrayBuffer().then(buffer => {
+                            resolve({
+                                id: Date.now() + Math.random(),
+                                name,
+                                originalName: img.name,
+                                originalSize: img.size,
+                                size: blob.size,
+                                width: canvas.width,
+                                height: canvas.height,
+                                format,
+                                buffer: new Uint8Array(buffer),
+                                url
+                            });
+                        });
+                    }, mime, q);
+                };
+                image.onerror = () => reject(new Error('Load failed'));
+                image.src = img.dataUrl;
+            });
+        }
+
+        function applyWatermark(ctx, cw, ch) {
+            const pos = document.getElementById('watermarkPosition').value;
+            const tab = document.querySelector('.tab.active').dataset.tab;
+
+            if (tab === 'textWatermark') {
+                const text = document.getElementById('watermarkText').value;
+                if (!text) return;
+                const fs = parseInt(document.getElementById('watermarkFontSize').value);
+                const color = document.getElementById('watermarkColor').value;
+                const opacity = parseInt(document.getElementById('watermarkOpacity').value) / 100;
+
+                ctx.save();
+                ctx.globalAlpha = opacity;
+                ctx.font = `${fs}px Arial, sans-serif`;
+                ctx.fillStyle = color;
+                const tw = ctx.measureText(text).width;
+                const th = fs;
+
+                getPositions(pos, cw, ch, tw, th).forEach(p => ctx.fillText(text, p.x, p.y + th));
+                ctx.restore();
+            } else if (tab === 'imageWatermark' && watermarkImage) {
+                const size = parseInt(document.getElementById('watermarkSize').value) / 100;
+                const ww = cw * size;
+                const wh = (watermarkImage.height / watermarkImage.width) * ww;
+
+                ctx.save();
+                ctx.globalAlpha = 0.7;
+                getPositions(pos, cw, ch, ww, wh).forEach(p => ctx.drawImage(watermarkImage, p.x, p.y, ww, wh));
+                ctx.restore();
+            }
+        }
+
+        function getPositions(pos, cw, ch, iw, ih) {
+            const pad = 20;
+            const positions = [];
+            switch (pos) {
+                case 'topLeft': positions.push({ x: pad, y: pad }); break;
+                case 'topRight': positions.push({ x: cw - iw - pad, y: pad }); break;
+                case 'bottomLeft': positions.push({ x: pad, y: ch - ih - pad }); break;
+                case 'bottomRight': positions.push({ x: cw - iw - pad, y: ch - ih - pad }); break;
+                case 'center': positions.push({ x: (cw - iw) / 2, y: (ch - ih) / 2 }); break;
+                case 'tile':
+                    for (let y = pad; y < ch; y += ih + 100)
+                        for (let x = pad; x < cw; x += iw + 100)
+                            positions.push({ x, y });
+                    break;
+            }
+            return positions;
+        }
+
+        function generateOutputName(orig, format) {
+            const pattern = document.getElementById('namingPattern').value;
+            const val = document.getElementById('namingValue').value;
+            const base = orig.replace(/\.[^.]+$/, '');
+            const ext = getExtension(format);
+
+            switch (pattern) {
+                case 'suffix': return base + (val || '_converted') + '.' + ext;
+                case 'prefix': return (val || 'converted_') + base + '.' + ext;
+                case 'custom': return (val || '{name}').replace('{name}', base) + '.' + ext;
+                default: return base + '.' + ext;
+            }
+        }
+
+        function getMimeType(f) {
+            return { jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', bmp: 'image/bmp', ico: 'image/x-icon', avif: 'image/avif' }[f] || 'image/png';
+        }
+
+        function getExtension(f) {
+            return { jpeg: 'jpg', png: 'png', webp: 'webp', gif: 'gif', bmp: 'bmp', ico: 'ico', avif: 'avif' }[f] || 'png';
+        }
+
+        function updateOutputList() {
+            document.getElementById('outputCount').textContent = `${convertedImages.length} files ready`;
+            const list = document.getElementById('outputList');
+
+            if (convertedImages.length === 0) {
+                list.innerHTML = `<div class="empty-state"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg><p>Converted images will appear here</p></div>`;
+                return;
+            }
+
+            list.innerHTML = convertedImages.map(img => {
+                const change = ((img.size - img.originalSize) / img.originalSize * 100).toFixed(1);
+                const cls = change < 0 ? 'reduced' : 'increased';
+                const txt = change < 0 ? change + '%' : '+' + change + '%';
+                return `
+                    <div class="output-item">
+                        <img class="output-thumb" src="${img.url}" alt="">
+                        <div class="output-details">
+                            <div class="output-name" title="${img.name}">${img.name}</div>
+                            <div class="output-status">
+                                <span class="status-dot success"></span>
+                                ${formatSize(img.size)}
+                                <span class="size-change ${cls}">(${txt})</span>
+                            </div>
+                        </div>
+                        <button class="output-download" onclick="saveSingle('${img.id}')">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function saveSingle(id) {
+            const img = convertedImages.find(i => i.id == id);
+            if (!img || !window.electronAPI) return;
+
+            const result = await window.electronAPI.saveFile({
+                buffer: Array.from(img.buffer),
+                fileName: img.name
+            });
+
+            if (result.success) {
+                showToast('File saved', 'success');
+            }
+        }
+
+        async function saveAllToFolder() {
+            if (convertedImages.length === 0 || !window.electronAPI) return;
+
+            const files = convertedImages.map(img => ({
+                name: img.name,
+                buffer: Array.from(img.buffer)
+            }));
+
+            const result = await window.electronAPI.saveFilesToFolder(files);
+            if (result.success) {
+                showToast(`Saved ${result.count} files to folder`, 'success');
+            }
+        }
+
+        async function saveAsZip() {
+            if (convertedImages.length === 0 || !window.electronAPI) return;
+
+            const files = convertedImages.map(img => ({
+                name: img.name,
+                buffer: Array.from(img.buffer)
+            }));
+
+            const result = await window.electronAPI.saveAsZip(files);
+            if (result.success) {
+                showToast(`ZIP saved (${formatSize(result.size)})`, 'success');
+            }
+        }
+
+        function formatSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icons = {
+                success: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>',
+                error: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>',
+                warning: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>'
+            };
+            toast.innerHTML = `<svg class="toast-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">${icons[type]}</svg><span class="toast-message">${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.animation = 'slideIn 0.3s ease reverse'; setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        document.querySelectorAll('.modal-overlay').forEach(m => {
+            m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('active'); });
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+        });
+    </script>
+</body>
+</html>
