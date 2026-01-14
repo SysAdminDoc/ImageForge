@@ -2,8 +2,6 @@
 
 A professional offline image converter with batch processing, watermarks, resize, and format conversion. All processing happens locally - your images never leave your computer.
 
-![ImageForge Pro](assets/screenshot.png)
-
 ## Features
 
 - **Format Conversion**: Convert between JPEG, PNG, WebP, GIF, BMP, ICO, AVIF
