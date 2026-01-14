@@ -2,6 +2,9 @@
 
 A professional offline image converter with batch processing, watermarks, resize, and format conversion. All processing happens locally - your images never leave your computer.
 
+<img width="1753" height="1134" alt="2026-01-13 20_54_53-ImageForge Pro" src="https://github.com/user-attachments/assets/fc8efb17-2ff3-4d6c-8b14-b02a5cfebd75" />
+
+
 ## Features
 
 - **Format Conversion**: Convert between JPEG, PNG, WebP, GIF, BMP, ICO, AVIF
