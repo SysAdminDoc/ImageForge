@@ -1,0 +1,1993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://cdnjs.cloudflare.com https://unpkg.com; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;">
+    <title>ImageForge Pro</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-primary: #020617; --bg-secondary: #0f172a; --bg-tertiary: #1e293b;
+            --bg-hover: #334155; --green-accent: #22c55e; --green-hover: #16a34a;
+            --green-dim: #166534; --blue-accent: #60a5fa; --blue-hover: #3b82f6;
+            --text-primary: #f8fafc; --text-secondary: #94a3b8; --text-muted: #64748b;
+            --border-color: #334155; --danger: #ef4444; --warning: #f59e0b; --success: #22c55e;
+        }
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary); color: var(--text-primary);
+            height: 100vh; overflow: hidden; user-select: none;
+        }
+
+        .title-bar {
+            background: var(--bg-secondary); height: 40px; display: flex;
+            align-items: center; padding: 0 16px; -webkit-app-region: drag;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .title-bar-content { display: flex; align-items: center; gap: 12px; -webkit-app-region: no-drag; }
+        .app-icon {
+            width: 24px; height: 24px;
+            background: linear-gradient(135deg, var(--green-accent), var(--blue-accent));
+            border-radius: 6px; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 11px;
+        }
+        .app-title { font-size: 13px; font-weight: 600; }
+        .app-version { font-size: 10px; color: var(--text-muted); background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px; }
+        .output-folder-indicator { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); -webkit-app-region: no-drag; }
+        .output-folder-indicator svg { width: 14px; height: 14px; }
+        .output-folder-path { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .main-container { display: grid; grid-template-columns: 300px 1fr 280px; height: calc(100vh - 40px - 32px); }
+
+        /* Settings Panel */
+        .settings-panel { background: var(--bg-secondary); border-right: 1px solid var(--border-color); overflow-y: auto; padding: 16px; }
+        .panel-section { margin-bottom: 20px; }
+        .section-title { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+        .section-title svg { width: 12px; height: 12px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+        .form-control { width: 100%; padding: 8px 10px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 12px; transition: all 0.2s; }
+        .form-control:focus { outline: none; border-color: var(--green-accent); box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.15); }
+        .form-control option { background: var(--bg-tertiary); }
+        .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .input-group { position: relative; }
+        .input-suffix { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 10px; color: var(--text-muted); }
+        .input-group .form-control { padding-right: 32px; }
+        .checkbox-group { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--bg-tertiary); border-radius: 6px; cursor: pointer; transition: background 0.2s; font-size: 12px; }
+        .checkbox-group:hover { background: var(--bg-hover); }
+        .checkbox-group input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--green-accent); cursor: pointer; }
+        .checkbox-group span { color: var(--text-secondary); }
+        .slider-container { padding: 2px 0; }
+        .slider-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .slider-value { background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px; font-size: 11px; color: var(--green-accent); font-weight: 600; }
+        input[type="range"] { width: 100%; height: 4px; background: var(--bg-tertiary); border-radius: 2px; appearance: none; cursor: pointer; }
+        input[type="range"]::-webkit-slider-thumb { appearance: none; width: 14px; height: 14px; background: var(--green-accent); border-radius: 50%; cursor: pointer; }
+        .color-picker-row { display: flex; gap: 8px; align-items: center; }
+        .color-picker-row input[type="color"] { width: 36px; height: 32px; border: none; border-radius: 6px; cursor: pointer; background: var(--bg-tertiary); padding: 2px; }
+        .color-picker-row input[type="text"] { flex: 1; }
+
+        /* Adjustment rows */
+        .adj-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .adj-label { font-size: 11px; color: var(--text-secondary); min-width: 70px; white-space: nowrap; }
+        .adj-row input[type="range"] { flex: 1; }
+        .adj-val { font-size: 10px; color: var(--green-accent); font-weight: 600; min-width: 32px; text-align: right; }
+        .adj-reset { width: 18px; height: 18px; border-radius: 4px; border: none; background: var(--bg-hover); color: var(--text-muted); cursor: pointer; font-size: 10px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; padding: 0; }
+        .adj-reset:hover { background: var(--danger); color: white; }
+        .adj-reset svg { width: 10px; height: 10px; }
+        .adj-toggles { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+        .adj-toggle { padding: 4px 10px; font-size: 11px; border-radius: 4px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+        .adj-toggle:hover { background: var(--bg-hover); }
+        .adj-toggle.active { background: var(--green-dim); border-color: var(--green-accent); color: var(--green-accent); }
+        .adj-presets { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
+        .adj-preset-btn { padding: 4px 8px; font-size: 10px; border-radius: 4px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; transition: all 0.2s; }
+        .adj-preset-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .crop-presets { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+        .crop-preset { padding: 4px 10px; font-size: 11px; border-radius: 4px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+        .crop-preset:hover { background: var(--bg-hover); }
+        .crop-preset.active { background: var(--green-dim); border-color: var(--green-accent); color: var(--green-accent); }
+
+        /* Main Panel */
+        .main-panel { background: var(--bg-primary); display: flex; flex-direction: column; overflow: hidden; }
+        .toolbar { background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); padding: 10px 16px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .btn { padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; border: none; display: inline-flex; align-items: center; gap: 5px; }
+        .btn svg { width: 14px; height: 14px; }
+        .btn-primary { background: var(--green-accent); color: var(--bg-primary); }
+        .btn-primary:hover { background: var(--green-hover); }
+        .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-secondary { background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); }
+        .btn-secondary:hover { background: var(--bg-hover); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-icon { padding: 6px; min-width: 28px; }
+        .btn-blue { background: var(--blue-accent); color: var(--bg-primary); }
+        .btn-blue:hover { background: var(--blue-hover); }
+        .toolbar-separator { width: 1px; height: 20px; background: var(--border-color); margin: 0 4px; }
+        .toolbar-spacer { flex: 1; }
+        .image-count { font-size: 11px; color: var(--text-muted); padding: 4px 8px; background: var(--bg-tertiary); border-radius: 4px; }
+
+        /* Sort bar */
+        .sort-bar { display: flex; align-items: center; gap: 6px; padding: 6px 16px; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); font-size: 11px; }
+        .sort-bar label { color: var(--text-muted); }
+        .sort-bar select { background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); font-size: 11px; padding: 3px 6px; border-radius: 4px; }
+        .sort-bar select option { background: var(--bg-tertiary); }
+        .filter-badge { padding: 2px 8px; border-radius: 4px; background: var(--bg-tertiary); color: var(--text-muted); font-size: 10px; cursor: pointer; border: 1px solid var(--border-color); }
+        .filter-badge:hover { background: var(--bg-hover); }
+        .filter-badge.active { background: var(--green-dim); color: var(--green-accent); border-color: var(--green-accent); }
+
+        /* Drop Zone */
+        .drop-zone-container { flex: 1; padding: 16px; overflow-y: auto; }
+        .drop-zone { border: 2px dashed var(--border-color); border-radius: 12px; min-height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.3s; cursor: pointer; background: var(--bg-secondary); }
+        .drop-zone:hover, .drop-zone.drag-over { border-color: var(--green-accent); background: rgba(34, 197, 94, 0.05); }
+        .drop-zone-icon { width: 64px; height: 64px; background: var(--bg-tertiary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+        .drop-zone-icon svg { width: 32px; height: 32px; color: var(--green-accent); }
+        .drop-zone h3 { font-size: 16px; margin-bottom: 6px; }
+        .drop-zone p { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+        .supported-formats { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; max-width: 350px; }
+        .format-badge { background: var(--bg-tertiary); padding: 3px 8px; border-radius: 4px; font-size: 10px; color: var(--text-secondary); text-transform: uppercase; }
+
+        /* Image Grid */
+        .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+        .image-card { background: var(--bg-secondary); border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); transition: all 0.2s; position: relative; cursor: pointer; }
+        .image-card:hover { border-color: var(--blue-accent); }
+        .image-card.selected { border-color: var(--green-accent); box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3); }
+        .image-card.drag-over-card { border-color: var(--warning); box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.4); }
+
+        /* Checkerboard for transparency */
+        .image-preview-wrap { position: relative; aspect-ratio: 1; overflow: hidden; background: repeating-conic-gradient(#1a1a2e 0% 25%, #0f172a 0% 50%) 50% / 16px 16px; }
+        .image-preview { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .image-info { padding: 10px; }
+        .image-name { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+        .image-meta { font-size: 10px; color: var(--text-muted); }
+        .image-checkbox { position: absolute; top: 6px; left: 6px; width: 20px; height: 20px; background: rgba(0,0,0,0.6); border-radius: 4px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--border-color); transition: all 0.2s; z-index: 2; }
+        .image-checkbox.checked { background: var(--green-accent); border-color: var(--green-accent); }
+        .image-checkbox svg { width: 12px; height: 12px; color: white; opacity: 0; }
+        .image-checkbox.checked svg { opacity: 1; }
+        .image-remove { position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; background: rgba(0,0,0,0.6); border-radius: 4px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; transition: all 0.2s; z-index: 2; }
+        .image-card:hover .image-remove { opacity: 1; }
+        .image-remove:hover { background: var(--danger); }
+        .image-remove svg { width: 12px; height: 12px; color: white; }
+        .image-zoom { position: absolute; bottom: 42px; right: 6px; width: 24px; height: 24px; background: rgba(0,0,0,0.7); border-radius: 4px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; transition: all 0.2s; z-index: 2; }
+        .image-card:hover .image-zoom { opacity: 1; }
+        .image-zoom:hover { background: var(--blue-accent); }
+        .image-zoom svg { width: 12px; height: 12px; color: white; }
+
+        /* Output Panel */
+        .output-panel { background: var(--bg-secondary); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; }
+        .output-header { padding: 12px 16px; border-bottom: 1px solid var(--border-color); }
+        .output-header h3 { font-size: 13px; margin-bottom: 2px; }
+        .output-header p { font-size: 11px; color: var(--text-muted); }
+        .output-list { flex: 1; overflow-y: auto; padding: 10px; }
+        .output-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--bg-tertiary); border-radius: 6px; margin-bottom: 6px; cursor: pointer; transition: background 0.2s; }
+        .output-item:hover { background: var(--bg-hover); }
+        .output-thumb { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; background: var(--bg-hover); }
+        .output-details { flex: 1; min-width: 0; }
+        .output-name { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .output-status { font-size: 10px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+        .status-dot { width: 5px; height: 5px; border-radius: 50%; }
+        .status-dot.success { background: var(--success); }
+        .size-change { font-weight: 500; }
+        .size-change.reduced { color: var(--green-accent); }
+        .size-change.increased { color: var(--danger); }
+        .output-download { width: 28px; height: 28px; border-radius: 6px; background: var(--green-accent); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .output-download:hover { background: var(--green-hover); }
+        .output-download svg { width: 14px; height: 14px; color: var(--bg-primary); }
+        .output-actions { padding: 12px; border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 6px; }
+        .output-actions .btn { width: 100%; justify-content: center; }
+
+        /* Progress */
+        .progress-container { padding: 12px 16px; border-top: 1px solid var(--border-color); display: none; }
+        .progress-container.active { display: block; }
+        .progress-header { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 11px; color: var(--text-secondary); }
+        .progress-bar { height: 4px; background: var(--bg-tertiary); border-radius: 2px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--green-accent), var(--blue-accent)); border-radius: 2px; transition: width 0.3s; }
+
+        /* Stats bar */
+        .stats-bar { height: 32px; background: var(--bg-secondary); border-top: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 16px; gap: 24px; font-size: 11px; color: var(--text-muted); }
+        .stats-bar .stat { display: flex; align-items: center; gap: 5px; }
+        .stats-bar .stat-val { color: var(--text-secondary); font-weight: 500; }
+        .stats-bar .stat-saved { color: var(--green-accent); font-weight: 600; }
+
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border-color); max-width: 500px; width: 90%; max-height: 80vh; overflow: hidden; }
+        .modal-header { padding: 16px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
+        .modal-header h3 { font-size: 14px; }
+        .modal-close { width: 28px; height: 28px; border-radius: 6px; background: var(--bg-tertiary); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .modal-close:hover { background: var(--danger); }
+        .modal-close svg { width: 14px; height: 14px; color: var(--text-primary); }
+        .modal-body { padding: 16px; overflow-y: auto; }
+
+        /* Preview */
+        .preview-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: none; align-items: center; justify-content: center; z-index: 1100; cursor: zoom-out; }
+        .preview-overlay.active { display: flex; }
+        .preview-container { position: relative; max-width: 90vw; max-height: 90vh; }
+        .preview-container img { max-width: 90vw; max-height: 85vh; object-fit: contain; border-radius: 8px; box-shadow: 0 0 60px rgba(0,0,0,0.5); }
+        .preview-info { position: absolute; bottom: -32px; left: 0; right: 0; text-align: center; font-size: 12px; color: var(--text-muted); }
+        .preview-close, .compare-close, .crop-close { position: fixed; top: 20px; right: 20px; width: 36px; height: 36px; border-radius: 8px; background: rgba(255,255,255,0.1); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1101; }
+        .preview-close:hover, .compare-close:hover, .crop-close:hover { background: var(--danger); }
+        .preview-close svg, .compare-close svg, .crop-close svg { width: 18px; height: 18px; color: white; }
+
+        /* Compare */
+        .compare-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1100; }
+        .compare-overlay.active { display: flex; }
+        .compare-wrapper { position: relative; overflow: hidden; border-radius: 8px; box-shadow: 0 0 60px rgba(0,0,0,0.5); cursor: col-resize; max-width: 80vw; max-height: 75vh; }
+        .compare-wrapper img { display: block; max-width: 80vw; max-height: 75vh; object-fit: contain; }
+        .compare-after { position: absolute; top: 0; left: 0; bottom: 0; overflow: hidden; }
+        .compare-after img { display: block; max-height: 75vh; object-fit: contain; }
+        .compare-slider-line { position: absolute; top: 0; bottom: 0; width: 3px; background: white; box-shadow: 0 0 8px rgba(0,0,0,0.5); cursor: col-resize; z-index: 2; }
+        .compare-handle { position: absolute; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border-radius: 50%; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; left: -16px; }
+        .compare-handle svg { width: 20px; height: 20px; color: var(--bg-primary); }
+        .compare-labels { position: absolute; top: 12px; left: 0; right: 0; z-index: 3; display: flex; justify-content: space-between; padding: 0 16px; pointer-events: none; }
+        .compare-label { background: rgba(0,0,0,0.7); padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; }
+        .compare-label.before { color: var(--text-secondary); }
+        .compare-label.after { color: var(--green-accent); }
+        .compare-info-bar { display: flex; gap: 24px; margin-top: 16px; font-size: 12px; color: var(--text-secondary); }
+        .compare-info-bar span { display: flex; align-items: center; gap: 6px; }
+
+        /* Visual Crop */
+        .crop-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1100; }
+        .crop-overlay.active { display: flex; }
+        .crop-canvas-wrap { position: relative; cursor: crosshair; }
+        .crop-canvas-wrap canvas { border-radius: 4px; }
+        .crop-selection { position: absolute; border: 2px solid var(--green-accent); box-shadow: 0 0 0 9999px rgba(0,0,0,0.6); pointer-events: none; z-index: 2; }
+        .crop-handle { position: absolute; width: 12px; height: 12px; background: white; border: 2px solid var(--green-accent); border-radius: 2px; pointer-events: all; cursor: nwse-resize; z-index: 3; }
+        .crop-handle.tl { top: -6px; left: -6px; cursor: nw-resize; }
+        .crop-handle.tr { top: -6px; right: -6px; cursor: ne-resize; }
+        .crop-handle.bl { bottom: -6px; left: -6px; cursor: sw-resize; }
+        .crop-handle.br { bottom: -6px; right: -6px; cursor: se-resize; }
+        .crop-dims-display { position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--green-accent); background: rgba(0,0,0,0.8); padding: 2px 8px; border-radius: 4px; white-space: nowrap; z-index: 3; }
+        .crop-toolbar { display: flex; gap: 8px; margin-top: 32px; align-items: center; }
+        .crop-toolbar .crop-presets { margin: 0; }
+
+        .size-estimate { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--bg-tertiary); border-radius: 4px; font-size: 11px; color: var(--text-muted); transition: all 0.3s; }
+        .size-estimate.active { color: var(--blue-accent); }
+
+        /* Toast */
+        .toast-container { position: fixed; bottom: 52px; right: 20px; z-index: 1200; display: flex; flex-direction: column; gap: 6px; }
+        .toast { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+        .toast.success .toast-icon { color: var(--success); }
+        .toast.error .toast-icon { color: var(--danger); }
+        .toast.warning .toast-icon { color: var(--warning); }
+        .toast-icon { width: 18px; height: 18px; }
+        .toast-message { font-size: 12px; }
+
+        .tabs { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 12px; }
+        .tab { padding: 8px 12px; font-size: 12px; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; }
+        .tab:hover { color: var(--text-secondary); }
+        .tab.active { color: var(--green-accent); border-bottom-color: var(--green-accent); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .watermark-preview { width: 100%; height: 80px; background: var(--bg-tertiary); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; overflow: hidden; }
+        .watermark-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .empty-state { text-align: center; padding: 32px 16px; color: var(--text-muted); }
+        .empty-state svg { width: 40px; height: 40px; margin-bottom: 12px; opacity: 0.5; }
+        .empty-state p { font-size: 12px; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background: var(--bg-hover); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* Multi-format checkboxes */
+        .multi-format { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+        .mf-check { display: flex; align-items: center; gap: 4px; padding: 4px 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; font-size: 11px; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+        .mf-check:hover { background: var(--bg-hover); }
+        .mf-check input { accent-color: var(--green-accent); width: 13px; height: 13px; }
+        .mf-check.active { border-color: var(--green-accent); color: var(--green-accent); background: var(--green-dim); }
+
+        /* Auto-optimize */
+        .auto-opt-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+        .auto-opt-row .form-control { width: 80px; }
+
+        /* Social presets grid */
+        .social-presets { display: flex; flex-wrap: wrap; gap: 4px; }
+        .social-btn { padding: 4px 8px; font-size: 10px; border-radius: 4px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .social-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+        /* Profiles */
+        .profile-row { display: flex; gap: 4px; margin-top: 6px; }
+        .profile-row .form-control { flex: 1; }
+        .profile-list { margin-top: 6px; }
+        .profile-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; background: var(--bg-tertiary); border-radius: 4px; margin-bottom: 4px; font-size: 11px; cursor: pointer; transition: background 0.2s; }
+        .profile-item:hover { background: var(--bg-hover); }
+        .profile-item .profile-del { width: 16px; height: 16px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; border-radius: 3px; }
+        .profile-item .profile-del:hover { background: var(--danger); color: white; }
+
+        /* Metadata viewer */
+        .meta-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 11px; }
+        .meta-key { color: var(--text-muted); }
+        .meta-val { color: var(--text-secondary); word-break: break-all; }
+
+        /* Annotation overlay */
+        .annotate-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1100; }
+        .annotate-overlay.active { display: flex; }
+        .annotate-toolbar { display: flex; gap: 6px; margin-top: 16px; align-items: center; }
+        .annotate-tool { padding: 6px 10px; font-size: 11px; border-radius: 4px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-secondary); cursor: pointer; }
+        .annotate-tool:hover { background: var(--bg-hover); }
+        .annotate-tool.active { background: var(--green-dim); border-color: var(--green-accent); color: var(--green-accent); }
+        .annotate-canvas { border-radius: 4px; cursor: crosshair; }
+
+        /* Collage overlay */
+        .collage-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1100; }
+        .collage-overlay.active { display: flex; }
+        .collage-toolbar { display: flex; gap: 8px; margin-top: 16px; align-items: center; }
+
+        /* Output action buttons - small */
+        .output-action-sm { width: 22px; height: 22px; border-radius: 4px; background: var(--bg-hover); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .output-action-sm:hover { background: var(--blue-accent); }
+        .output-action-sm svg { width: 11px; height: 11px; color: var(--text-primary); }
+
+        /* Wide modal */
+        .modal-wide { max-width: 700px; }
+        .modal-wide .modal-body { max-height: 60vh; }
+    </style>
+</head>
+<body>
+    <div class="title-bar">
+        <div class="title-bar-content">
+            <div class="app-icon">IF</div>
+            <span class="app-title">ImageForge Pro</span>
+            <span class="app-version">v3.2.0</span>
+        </div>
+        <div class="output-folder-indicator" id="outputFolderIndicator" style="display: none;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+            <span class="output-folder-path" id="outputFolderPath"></span>
+        </div>
+    </div>
+    <div class="main-container">
+        <div class="settings-panel">
+            <!-- Output Format -->
+            <div class="panel-section">
+                <div class="section-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg> Output Format</div>
+                <div class="form-group"><label>Convert To</label>
+                    <select class="form-control" id="outputFormat"><option value="jpeg">JPEG (.jpg)</option><option value="png">PNG (.png)</option><option value="webp">WebP (.webp)</option><option value="gif">GIF (.gif)</option><option value="bmp">BMP (.bmp)</option><option value="ico">ICO (.ico)</option><option value="avif">AVIF (.avif)</option></select>
+                </div>
+                <div class="form-group"><div class="slider-container"><div class="slider-header"><label>Quality</label><span class="slider-value" id="qualityValue">85%</span></div><input type="range" id="quality" min="1" max="100" value="85"></div></div>
+                <div class="size-estimate" id="sizeEstimate"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="12" height="12"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg><span id="sizeEstimateText">Estimated size: --</span></div>
+                <label class="checkbox-group" style="margin-top: 8px;"><input type="checkbox" id="enableMultiFormat"><span>Multi-format export</span></label>
+                <div class="multi-format" id="multiFormatOpts" style="display: none;">
+                    <label class="mf-check"><input type="checkbox" value="jpeg"> JPG</label>
+                    <label class="mf-check"><input type="checkbox" value="png"> PNG</label>
+                    <label class="mf-check"><input type="checkbox" value="webp"> WebP</label>
+                    <label class="mf-check"><input type="checkbox" value="avif"> AVIF</label>
+                </div>
+                <label class="checkbox-group" style="margin-top: 6px;"><input type="checkbox" id="enableAutoOpt"><span>Auto-optimize to target</span></label>
+                <div class="auto-opt-row" id="autoOptRow" style="display: none;">
+                    <label style="font-size:11px; color: var(--text-secondary);">Max:</label>
+                    <input type="number" class="form-control" id="autoOptTarget" value="200" min="10" max="10000" style="width:70px;">
+                    <label style="font-size:11px; color: var(--text-muted);">KB</label>
+                </div>
+            </div>
+
+            <!-- Adjustments -->
+            <div class="panel-section">
+                <div class="section-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg> Adjustments</div>
+                <div class="adj-row"><span class="adj-label">Brightness</span><input type="range" id="adjBrightness" min="-100" max="100" value="0"><span class="adj-val" id="adjBrightnessVal">0</span><button class="adj-reset" onclick="resetAdj('adjBrightness')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button></div>
+                <div class="adj-row"><span class="adj-label">Contrast</span><input type="range" id="adjContrast" min="-100" max="100" value="0"><span class="adj-val" id="adjContrastVal">0</span><button class="adj-reset" onclick="resetAdj('adjContrast')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button></div>
+                <div class="adj-row"><span class="adj-label">Saturation</span><input type="range" id="adjSaturation" min="-100" max="100" value="0"><span class="adj-val" id="adjSaturationVal">0</span><button class="adj-reset" onclick="resetAdj('adjSaturation')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button></div>
+                <div class="adj-row"><span class="adj-label">Blur</span><input type="range" id="adjBlur" min="0" max="20" value="0"><span class="adj-val" id="adjBlurVal">0</span><button class="adj-reset" onclick="resetAdj('adjBlur')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button></div>
+                <div class="adj-row"><span class="adj-label">Sharpness</span><input type="range" id="adjSharpness" min="0" max="100" value="0"><span class="adj-val" id="adjSharpnessVal">0</span><button class="adj-reset" onclick="resetAdj('adjSharpness')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button></div>
+                <div class="adj-row"><span class="adj-label">Hue Rotate</span><input type="range" id="adjHue" min="0" max="360" value="0"><span class="adj-val" id="adjHueVal">0&#176;</span><button class="adj-reset" onclick="resetAdj('adjHue')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button></div>
+                <div class="adj-toggles">
+                    <button class="adj-toggle" id="adjGrayscale" onclick="toggleAdj('adjGrayscale')">Grayscale</button>
+                    <button class="adj-toggle" id="adjSepia" onclick="toggleAdj('adjSepia')">Sepia</button>
+                    <button class="adj-toggle" id="adjInvert" onclick="toggleAdj('adjInvert')">Invert</button>
+                </div>
+                <div class="adj-presets">
+                    <button class="adj-preset-btn" onclick="applyPreset('reset')">Reset All</button>
+                    <button class="adj-preset-btn" onclick="applyPreset('vivid')">Vivid</button>
+                    <button class="adj-preset-btn" onclick="applyPreset('muted')">Muted</button>
+                    <button class="adj-preset-btn" onclick="applyPreset('bw')">B&W</button>
+                    <button class="adj-preset-btn" onclick="applyPreset('vintage')">Vintage</button>
+                    <button class="adj-preset-btn" onclick="applyPreset('cold')">Cold</button>
+                </div>
+            </div>
+
+            <!-- Effects -->
+            <div class="panel-section">
+                <div class="section-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg> Effects</div>
+                <div class="adj-row"><span class="adj-label">Vignette</span><input type="range" id="fxVignette" min="0" max="100" value="0"><span class="adj-val" id="fxVignetteVal">0</span><button class="adj-reset" onclick="resetAdj('fxVignette')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button></div>
+                <div class="adj-row"><span class="adj-label">Grain</span><input type="range" id="fxGrain" min="0" max="100" value="0"><span class="adj-val" id="fxGrainVal">0</span><button class="adj-reset" onclick="resetAdj('fxGrain')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button></div>
+                <div class="form-group" style="margin-top: 4px;">
+                    <label>Color Tint</label>
+                    <div class="color-picker-row">
+                        <input type="color" id="fxTintColor" value="#ff6600">
+                        <input type="range" id="fxTintAmount" min="0" max="100" value="0" style="flex:1;">
+                        <span class="adj-val" id="fxTintAmountVal">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Border -->
+            <div class="panel-section">
+                <div class="section-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5z"/></svg> Border &amp; Padding</div>
+                <label class="checkbox-group"><input type="checkbox" id="enableBorder"><span>Enable Border</span></label>
+                <div id="borderOptions" style="margin-top: 10px; display: none;">
+                    <div class="adj-row"><span class="adj-label">Width</span><input type="range" id="borderWidth" min="1" max="100" value="10"><span class="adj-val" id="borderWidthVal">10</span></div>
+                    <div class="adj-row"><span class="adj-label">Padding</span><input type="range" id="borderPadding" min="0" max="100" value="0"><span class="adj-val" id="borderPaddingVal">0</span></div>
+                    <div class="form-group"><label>Color</label><div class="color-picker-row"><input type="color" id="borderColor" value="#ffffff"><input type="text" class="form-control" id="borderColorText" value="#ffffff"></div></div>
+                </div>
+            </div>
+
+            <!-- Background Fill -->
+            <div class="panel-section">
+                <div class="section-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg> Background Fill</div>
+                <label class="checkbox-group"><input type="checkbox" id="enableBgFill"><span>Replace transparency</span></label>
+                <div id="bgFillOptions" style="margin-top: 8px; display: none;">
+                    <div class="form-group"><label>Color</label><div class="color-picker-row"><input type="color" id="bgFillColor" value="#ffffff"><input type="text" class="form-control" id="bgFillColorText" value="#ffffff"></div></div>
+                </div>
+            </div>
+
+            <!-- Social Media Presets -->
+            <div class="panel-section">
+                <div class="section-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/></svg> Social Media Presets</div>
+                <div class="social-presets">
+                    <button class="social-btn" onclick="applySocial(1080,1080)">IG Post 1080x1080</button>
+                    <button class="social-btn" onclick="applySocial(1080,1920)">IG Story 1080x1920</button>
+                    <button class="social-btn" onclick="applySocial(1200,630)">FB Cover 1200x630</button>
+                    <button class="social-btn" onclick="applySocial(1500,500)">X Header 1500x500</button>
+                    <button class="social-btn" onclick="applySocial(1280,720)">YT Thumb 1280x720</button>
+                    <button class="social-btn" onclick="applySocial(1584,396)">LinkedIn Banner</button>
+                    <button class="social-btn" onclick="applySocial(1200,628)">OG Image 1200x628</button>
+                    <button class="social-btn" onclick="applySocial(820,312)">FB Header 820x312</button>
+                </div>
+            </div>
+
+            <!-- Settings Profiles -->
+            <div class="panel-section">
+                <div class="section-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg> Settings Profiles</div>
+                <div class="profile-row"><input type="text" class="form-control" id="profileName" placeholder="Profile name"><button class="btn btn-primary" style="font-size:11px;padding:6px 10px;" onclick="saveProfile()">Save</button></div>
+                <div class="profile-list" id="profileList"></div>
+            </div>
+
+            <!-- Crop -->
+            <div class="panel-section">
+                <div class="section-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18M3 9h6m6 0h6M9 3v6m0 6v6"/></svg> Crop</div>
+                <label class="checkbox-group"><input type="checkbox" id="enableCrop"><span>Enable Crop</span></label>
+                <div id="cropOptions" style="margin-top: 10px; display: none;">
+                    <button class="btn btn-blue" style="width:100%; margin-bottom: 8px; justify-content: center;" onclick="openVisualCrop()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/></svg> Visual Crop Tool</button>
+                    <div class="form-group"><label>Aspect Ratio</label>
+                        <div class="crop-presets">
+                            <button class="crop-preset active" data-ratio="free" onclick="setCropRatio('free',this)">Free</button>
+                            <button class="crop-preset" data-ratio="1:1" onclick="setCropRatio('1:1',this)">1:1</button>
+                            <button class="crop-preset" data-ratio="16:9" onclick="setCropRatio('16:9',this)">16:9</button>
+                            <button class="crop-preset" data-ratio="4:3" onclick="setCropRatio('4:3',this)">4:3</button>
+                            <button class="crop-preset" data-ratio="3:2" onclick="setCropRatio('3:2',this)">3:2</button>
+                            <button class="crop-preset" data-ratio="9:16" onclick="setCropRatio('9:16',this)">9:16</button>
+                        </div>
+                    </div>
+                    <div class="input-row" style="margin-top: 8px;"><div class="input-group"><label>X</label><input type="number" class="form-control" id="cropX" placeholder="0" min="0"><span class="input-suffix">px</span></div><div class="input-group"><label>Y</label><input type="number" class="form-control" id="cropY" placeholder="0" min="0"><span class="input-suffix">px</span></div></div>
+                    <div class="input-row" style="margin-top: 8px;"><div class="input-group"><label>Width</label><input type="number" class="form-control" id="cropW" placeholder="Auto" min="1"><span class="input-suffix">px</span></div><div class="input-group"><label>Height</label><input type="number" class="form-control" id="cropH" placeholder="Auto" min="1"><span class="input-suffix">px</span></div></div>
+                </div>
+            </div>
+
+            <!-- Resize -->
+            <div class="panel-section">
+                <div class="section-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg> Resize</div>
+                <label class="checkbox-group"><input type="checkbox" id="enableResize"><span>Enable Resize</span></label>
+                <div id="resizeOptions" style="margin-top: 10px; display: none;">
+                    <div class="form-group"><label>Mode</label><select class="form-control" id="resizeMode"><option value="dimensions">By Dimensions</option><option value="percentage">By Percentage</option><option value="maxWidth">Max Width</option><option value="maxHeight">Max Height</option></select></div>
+                    <div class="input-row" id="dimensionInputs"><div class="input-group"><label>Width</label><input type="number" class="form-control" id="resizeWidth" placeholder="Auto"><span class="input-suffix">px</span></div><div class="input-group"><label>Height</label><input type="number" class="form-control" id="resizeHeight" placeholder="Auto"><span class="input-suffix">px</span></div></div>
+                    <div class="form-group" id="percentageInput" style="display: none;"><div class="input-group"><label>Scale</label><input type="number" class="form-control" id="resizePercentage" value="50" min="1" max="500"><span class="input-suffix">%</span></div></div>
+                    <label class="checkbox-group"><input type="checkbox" id="maintainAspect" checked><span>Maintain Aspect Ratio</span></label>
+                </div>
+            </div>
+
+            <!-- Transform -->
+            <div class="panel-section">
+                <div class="section-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Transform</div>
+                <div class="form-group"><label>Rotation</label><select class="form-control" id="rotation"><option value="0">None</option><option value="90">90&#176; Clockwise</option><option value="180">180&#176;</option><option value="270">90&#176; Counter-clockwise</option></select></div>
+                <div class="input-row"><label class="checkbox-group"><input type="checkbox" id="flipH"><span>Flip H</span></label><label class="checkbox-group"><input type="checkbox" id="flipV"><span>Flip V</span></label></div>
+            </div>
+
+            <!-- Watermark -->
+            <div class="panel-section">
+                <div class="section-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg> Watermark</div>
+                <label class="checkbox-group"><input type="checkbox" id="enableWatermark"><span>Add Watermark</span></label>
+                <div id="watermarkOptions" style="margin-top: 10px; display: none;">
+                    <div class="tabs"><div class="tab active" data-tab="textWatermark">Text</div><div class="tab" data-tab="imageWatermark">Image</div></div>
+                    <div class="tab-content active" id="textWatermark">
+                        <div class="form-group"><label>Text</label><input type="text" class="form-control" id="watermarkText" placeholder="&copy; Your Name"></div>
+                        <div class="form-group"><label>Font Size</label><input type="number" class="form-control" id="watermarkFontSize" value="24" min="8" max="200"></div>
+                        <div class="form-group"><label>Color</label><div class="color-picker-row"><input type="color" id="watermarkColor" value="#ffffff"><input type="text" class="form-control" id="watermarkColorText" value="#ffffff"></div></div>
+                        <div class="form-group"><div class="slider-container"><div class="slider-header"><label>Opacity</label><span class="slider-value" id="watermarkOpacityValue">50%</span></div><input type="range" id="watermarkOpacity" min="1" max="100" value="50"></div></div>
+                    </div>
+                    <div class="tab-content" id="imageWatermark">
+                        <div class="watermark-preview" id="watermarkImagePreview"><span style="color:var(--text-muted);font-size:11px;">No image selected</span></div>
+                        <button class="btn btn-secondary" style="width:100%;font-size:11px;" onclick="selectWatermarkImage()">Select Watermark Image</button>
+                        <input type="file" id="watermarkImageInput" accept="image/*" style="display:none;">
+                        <div class="form-group" style="margin-top:10px;"><div class="slider-container"><div class="slider-header"><label>Size</label><span class="slider-value" id="watermarkSizeValue">20%</span></div><input type="range" id="watermarkSize" min="5" max="50" value="20"></div></div>
+                    </div>
+                    <div class="form-group" style="margin-top:10px;"><label>Position</label><select class="form-control" id="watermarkPosition"><option value="bottomRight">Bottom Right</option><option value="bottomLeft">Bottom Left</option><option value="topRight">Top Right</option><option value="topLeft">Top Left</option><option value="center">Center</option><option value="tile">Tile (Repeat)</option></select></div>
+                </div>
+            </div>
+
+            <!-- Metadata -->
+            <div class="panel-section">
+                <div class="section-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Metadata</div>
+                <label class="checkbox-group"><input type="checkbox" id="stripMetadata" checked><span>Strip EXIF / metadata</span></label>
+            </div>
+
+            <!-- Naming -->
+            <div class="panel-section">
+                <div class="section-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg> Output Naming</div>
+                <div class="form-group"><label>Pattern</label><select class="form-control" id="namingPattern"><option value="original">Keep Original Name</option><option value="suffix">Add Suffix</option><option value="prefix">Add Prefix</option><option value="counter">Counter (photo_001)</option><option value="custom">Custom Pattern</option></select></div>
+                <div class="form-group" id="namingExtra" style="display: none;"><label id="namingExtraLabel">Suffix</label><input type="text" class="form-control" id="namingValue" placeholder="_converted"></div>
+            </div>
+        </div>
+
+        <!-- Main Panel -->
+        <div class="main-panel">
+            <input type="file" id="webFileInput" multiple accept="image/*" style="display:none;">
+            <input type="file" id="webFolderInput" multiple accept="image/*" webkitdirectory style="display:none;">
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="openFiles()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg> Add Images</button>
+                <button class="btn btn-secondary" onclick="openFolder()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg> Add Folder</button>
+                <button class="btn btn-secondary btn-icon" onclick="pasteFromClipboard()" title="Paste"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></button>
+                <div class="toolbar-separator"></div>
+                <button class="btn btn-secondary" onclick="selectAll()">Select All</button>
+                <button class="btn btn-secondary" onclick="clearSelection()">Deselect</button>
+                <div class="toolbar-separator"></div>
+                <button class="btn btn-danger" onclick="removeSelected()">Remove</button>
+                <button class="btn btn-danger" onclick="clearAll()">Clear All</button>
+                <div class="toolbar-spacer"></div>
+                <span class="image-count" id="imageCount">0 images</span>
+                <button class="btn btn-secondary btn-icon" onclick="openMetadataViewer()" title="Image Info"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></button>
+                <button class="btn btn-secondary btn-icon" onclick="openAnnotate()" title="Annotate"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></button>
+                <button class="btn btn-secondary btn-icon" onclick="openCollage()" title="Contact Sheet"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg></button>
+                <div class="toolbar-separator"></div>
+                <button class="btn btn-blue" onclick="convertSelected()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/></svg> Selected</button>
+                <button class="btn btn-primary" onclick="convertImages()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Convert All</button>
+            </div>
+            <div class="sort-bar" id="sortBar" style="display:none;">
+                <label>Sort:</label>
+                <select id="sortMode" onchange="sortImages()"><option value="added">Added Order</option><option value="name">Name</option><option value="size-asc">Size (small first)</option><option value="size-desc">Size (large first)</option><option value="dims">Dimensions</option></select>
+                <div class="toolbar-separator" style="height:14px;"></div>
+                <label>Filter:</label>
+                <button class="filter-badge active" onclick="filterImages('all',this)">All</button>
+                <button class="filter-badge" onclick="filterImages('jpg',this)">JPG</button>
+                <button class="filter-badge" onclick="filterImages('png',this)">PNG</button>
+                <button class="filter-badge" onclick="filterImages('webp',this)">WebP</button>
+                <button class="filter-badge" onclick="filterImages('gif',this)">GIF</button>
+                <button class="filter-badge" onclick="filterImages('other',this)">Other</button>
+            </div>
+            <div class="drop-zone-container">
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg></div>
+                    <h3>Drop images here</h3>
+                    <p>or click to browse &bull; Ctrl+V to paste</p>
+                    <div class="supported-formats"><span class="format-badge">JPG</span><span class="format-badge">PNG</span><span class="format-badge">WebP</span><span class="format-badge">GIF</span><span class="format-badge">BMP</span><span class="format-badge">SVG</span><span class="format-badge">ICO</span><span class="format-badge">TIFF</span><span class="format-badge">HEIC</span><span class="format-badge">AVIF</span></div>
+                </div>
+                <div class="image-grid" id="imageGrid" style="display:none;"></div>
+            </div>
+            <div class="progress-container" id="progressContainer"><div class="progress-header"><span id="progressText">Converting...</span><span id="progressPercent">0%</span></div><div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div></div>
+        </div>
+
+        <!-- Output Panel -->
+        <div class="output-panel">
+            <div class="output-header"><h3>Converted Files</h3><p id="outputCount">0 files ready</p></div>
+            <div class="output-list" id="outputList"><div class="empty-state"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg><p>Converted images will appear here</p></div></div>
+            <div class="output-actions">
+                <button class="btn btn-primary" onclick="saveAllToFolder()" id="saveAllBtn" disabled><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg> Download All</button>
+                <button class="btn btn-secondary" onclick="saveAsZip()" id="saveZipBtn" disabled><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg> Download as ZIP</button>
+                <button class="btn btn-secondary" onclick="exportAsPdf()" id="savePdfBtn" disabled><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg> Export as PDF</button>
+                <button class="btn btn-secondary" onclick="generateFavicons()" id="faviconBtn" disabled><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg> Favicon Bundle</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="stats-bar" id="statsBar">
+        <div class="stat">Images: <span class="stat-val" id="statImages">0</span></div>
+        <div class="stat">Input: <span class="stat-val" id="statInputSize">0 B</span></div>
+        <div class="stat">Output: <span class="stat-val" id="statOutputSize">0 B</span></div>
+        <div class="stat">Saved: <span class="stat-saved" id="statSaved">--</span></div>
+    </div>
+
+    <!-- Preview Overlay -->
+    <div class="preview-overlay" id="previewOverlay"><button class="preview-close" onclick="closePreview()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button><div class="preview-container"><img id="previewImage" src="" alt=""><div class="preview-info" id="previewInfo"></div></div></div>
+
+    <!-- Compare Overlay -->
+    <div class="compare-overlay" id="compareOverlay"><button class="compare-close" onclick="closeCompare()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button><div class="compare-wrapper" id="compareWrapper"><img id="compareBefore" src="" alt="Before"><div class="compare-after" id="compareAfter"><img id="compareAfterImg" src="" alt="After"></div><div class="compare-slider-line" id="compareSlider"><div class="compare-handle"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7l-4 5 4 5M16 7l4 5-4 5"/></svg></div></div><div class="compare-labels"><span class="compare-label before">ORIGINAL</span><span class="compare-label after">CONVERTED</span></div></div><div class="compare-info-bar" id="compareInfoBar"></div></div>
+
+    <!-- Visual Crop Overlay -->
+    <div class="crop-overlay" id="cropOverlay"><button class="crop-close" onclick="closeCrop()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        <div class="crop-canvas-wrap" id="cropCanvasWrap"><canvas id="cropCanvas"></canvas>
+            <div class="crop-selection" id="cropSelection" style="display:none;"><div class="crop-handle tl" data-handle="tl"></div><div class="crop-handle tr" data-handle="tr"></div><div class="crop-handle bl" data-handle="bl"></div><div class="crop-handle br" data-handle="br"></div><div class="crop-dims-display" id="cropDimsDisplay"></div></div>
+        </div>
+        <div class="crop-toolbar">
+            <div class="crop-presets">
+                <button class="crop-preset active" onclick="setCropRatioVisual('free',this)">Free</button>
+                <button class="crop-preset" onclick="setCropRatioVisual('1:1',this)">1:1</button>
+                <button class="crop-preset" onclick="setCropRatioVisual('16:9',this)">16:9</button>
+                <button class="crop-preset" onclick="setCropRatioVisual('4:3',this)">4:3</button>
+                <button class="crop-preset" onclick="setCropRatioVisual('3:2',this)">3:2</button>
+            </div>
+            <button class="btn btn-primary" onclick="applyCrop()">Apply Crop</button>
+            <button class="btn btn-secondary" onclick="closeCrop()">Cancel</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="shortcutsModal"><div class="modal"><div class="modal-header"><h3>Keyboard Shortcuts</h3><button class="modal-close" onclick="closeModal('shortcutsModal')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div><div class="modal-body"><div>Drag & drop to reorder images in the grid.</div></div></div></div>
+
+    <!-- Annotation Overlay -->
+    <div class="annotate-overlay" id="annotateOverlay">
+        <button class="crop-close" onclick="closeAnnotate()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        <canvas id="annotateCanvas" class="annotate-canvas"></canvas>
+        <div class="annotate-toolbar">
+            <button class="annotate-tool active" data-tool="freehand" onclick="setAnnotateTool('freehand',this)">Freehand</button>
+            <button class="annotate-tool" data-tool="line" onclick="setAnnotateTool('line',this)">Line</button>
+            <button class="annotate-tool" data-tool="arrow" onclick="setAnnotateTool('arrow',this)">Arrow</button>
+            <button class="annotate-tool" data-tool="rect" onclick="setAnnotateTool('rect',this)">Rectangle</button>
+            <button class="annotate-tool" data-tool="circle" onclick="setAnnotateTool('circle',this)">Circle</button>
+            <button class="annotate-tool" data-tool="text" onclick="setAnnotateTool('text',this)">Text</button>
+            <div class="toolbar-separator" style="height:20px;"></div>
+            <input type="color" id="annotateColor" value="#ff3333" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;">
+            <input type="range" id="annotateSize" min="1" max="20" value="3" style="width:80px;">
+            <div class="toolbar-separator" style="height:20px;"></div>
+            <button class="btn btn-secondary" onclick="annotateUndo()">Undo</button>
+            <button class="btn btn-primary" onclick="applyAnnotation()">Apply</button>
+            <button class="btn btn-secondary" onclick="closeAnnotate()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Collage/Contact Sheet Overlay -->
+    <div class="collage-overlay" id="collageOverlay">
+        <button class="crop-close" onclick="closeCollage()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        <canvas id="collageCanvas" style="border-radius:8px; max-width:85vw; max-height:70vh;"></canvas>
+        <div class="collage-toolbar">
+            <label style="font-size:11px;color:var(--text-secondary);">Columns:</label>
+            <input type="range" id="collageCols" min="1" max="8" value="3" style="width:80px;" oninput="renderCollage()">
+            <span class="adj-val" id="collageColsVal">3</span>
+            <label style="font-size:11px;color:var(--text-secondary);margin-left:12px;">Spacing:</label>
+            <input type="range" id="collageSpacing" min="0" max="40" value="8" style="width:80px;" oninput="renderCollage()">
+            <span class="adj-val" id="collageSpacingVal">8</span>
+            <label style="font-size:11px;color:var(--text-secondary);margin-left:12px;">BG:</label>
+            <input type="color" id="collageBg" value="#020617" style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;" oninput="renderCollage()">
+            <div class="toolbar-separator" style="height:20px;"></div>
+            <button class="btn btn-primary" onclick="downloadCollage()">Download</button>
+            <button class="btn btn-secondary" onclick="closeCollage()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Metadata Viewer Modal -->
+    <div class="modal-overlay" id="metadataModal"><div class="modal modal-wide"><div class="modal-header"><h3>Image Metadata</h3><button class="modal-close" onclick="closeModal('metadataModal')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div><div class="modal-body" id="metadataBody"><p style="font-size:12px;color:var(--text-muted);">Select an image to view its metadata.</p></div></div></div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // === STATE ===
+        let images = [];
+        let convertedImages = [];
+        let watermarkImage = null;
+        let outputFolder = null;
+        let cropRatio = 'free';
+        let sizeEstimateTimer = null;
+        let currentFilter = 'all';
+        let imageOrder = []; // for drag reorder
+        let cropState = { imgId: null, scale: 1, sx: 0, sy: 0, sw: 0, sh: 0, dragging: false, handle: null, startX: 0, startY: 0, startRect: {} };
+        let counterIndex = 0;
+        let annotateState = { tool: 'freehand', drawing: false, startX: 0, startY: 0, history: [], baseImage: null, imgId: null };
+        let collageLoadedImages = [];
+
+        // === INIT ===
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+            setupElectronListeners();
+            setupWebFileInputs();
+            setupTabs();
+            setupAdjustmentListeners();
+            setupCompareSlider();
+            setupCropTool();
+            setupDragReorder();
+        });
+
+        function setupEventListeners() {
+            const dropZone = document.getElementById('dropZone');
+            dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+            dropZone.addEventListener('drop', handleDrop);
+
+            document.getElementById('quality').addEventListener('input', (e) => {
+                document.getElementById('qualityValue').textContent = e.target.value + '%';
+                debounceSizeEstimate();
+            });
+            document.getElementById('watermarkOpacity').addEventListener('input', (e) => { document.getElementById('watermarkOpacityValue').textContent = e.target.value + '%'; });
+            document.getElementById('watermarkSize').addEventListener('input', (e) => { document.getElementById('watermarkSizeValue').textContent = e.target.value + '%'; });
+            document.getElementById('watermarkColor').addEventListener('input', (e) => { document.getElementById('watermarkColorText').value = e.target.value; });
+            document.getElementById('watermarkColorText').addEventListener('input', (e) => { if (/^#[0-9a-f]{6}$/i.test(e.target.value)) document.getElementById('watermarkColor').value = e.target.value; });
+
+            document.getElementById('enableResize').addEventListener('change', (e) => { document.getElementById('resizeOptions').style.display = e.target.checked ? 'block' : 'none'; });
+            document.getElementById('enableWatermark').addEventListener('change', (e) => { document.getElementById('watermarkOptions').style.display = e.target.checked ? 'block' : 'none'; });
+            document.getElementById('enableCrop').addEventListener('change', (e) => { document.getElementById('cropOptions').style.display = e.target.checked ? 'block' : 'none'; });
+            document.getElementById('enableBorder').addEventListener('change', (e) => { document.getElementById('borderOptions').style.display = e.target.checked ? 'block' : 'none'; });
+            document.getElementById('enableBgFill').addEventListener('change', (e) => { document.getElementById('bgFillOptions').style.display = e.target.checked ? 'block' : 'none'; });
+            document.getElementById('enableMultiFormat').addEventListener('change', (e) => { document.getElementById('multiFormatOpts').style.display = e.target.checked ? 'flex' : 'none'; });
+            document.getElementById('enableAutoOpt').addEventListener('change', (e) => { document.getElementById('autoOptRow').style.display = e.target.checked ? 'flex' : 'none'; });
+            document.getElementById('bgFillColor').addEventListener('input', (e) => { document.getElementById('bgFillColorText').value = e.target.value; });
+            document.getElementById('bgFillColorText').addEventListener('input', (e) => { if (/^#[0-9a-f]{6}$/i.test(e.target.value)) document.getElementById('bgFillColor').value = e.target.value; });
+            document.querySelectorAll('.mf-check input').forEach(cb => { cb.addEventListener('change', () => { cb.closest('.mf-check').classList.toggle('active', cb.checked); }); });
+            document.getElementById('resizeMode').addEventListener('change', (e) => {
+                const v = e.target.value;
+                document.getElementById('dimensionInputs').style.display = (v === 'dimensions' || v === 'maxWidth' || v === 'maxHeight') ? 'grid' : 'none';
+                document.getElementById('percentageInput').style.display = v === 'percentage' ? 'block' : 'none';
+            });
+            document.getElementById('namingPattern').addEventListener('change', (e) => {
+                const v = e.target.value;
+                document.getElementById('namingExtra').style.display = (v !== 'original' && v !== 'counter') ? 'block' : 'none';
+                const labels = { suffix: 'Suffix', prefix: 'Prefix', custom: 'Pattern ({name})' };
+                document.getElementById('namingExtraLabel').textContent = labels[v] || '';
+            });
+
+            document.getElementById('watermarkImageInput').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) { const reader = new FileReader(); reader.onload = (ev) => { watermarkImage = new Image(); watermarkImage.onload = () => { document.getElementById('watermarkImagePreview').innerHTML = `<img src="${ev.target.result}">`; }; watermarkImage.src = ev.target.result; }; reader.readAsDataURL(file); }
+            });
+
+            document.getElementById('outputFormat').addEventListener('change', () => debounceSizeEstimate());
+
+            // Border controls
+            document.getElementById('borderWidth').addEventListener('input', (e) => { document.getElementById('borderWidthVal').textContent = e.target.value; });
+            document.getElementById('borderPadding').addEventListener('input', (e) => { document.getElementById('borderPaddingVal').textContent = e.target.value; });
+            document.getElementById('borderColor').addEventListener('input', (e) => { document.getElementById('borderColorText').value = e.target.value; });
+            document.getElementById('borderColorText').addEventListener('input', (e) => { if (/^#[0-9a-f]{6}$/i.test(e.target.value)) document.getElementById('borderColor').value = e.target.value; });
+
+            // Effects
+            document.getElementById('fxVignette').addEventListener('input', (e) => { document.getElementById('fxVignetteVal').textContent = e.target.value; });
+            document.getElementById('fxGrain').addEventListener('input', (e) => { document.getElementById('fxGrainVal').textContent = e.target.value; });
+            document.getElementById('fxTintAmount').addEventListener('input', (e) => { document.getElementById('fxTintAmountVal').textContent = e.target.value; });
+
+            document.addEventListener('paste', handlePaste);
+        }
+
+        function setupAdjustmentListeners() {
+            ['adjBrightness', 'adjContrast', 'adjSaturation', 'adjBlur', 'adjSharpness'].forEach(id => {
+                document.getElementById(id).addEventListener('input', () => { document.getElementById(id + 'Val').textContent = document.getElementById(id).value; });
+            });
+            document.getElementById('adjHue').addEventListener('input', () => { document.getElementById('adjHueVal').innerHTML = document.getElementById('adjHue').value + '&#176;'; });
+        }
+
+        function setupElectronListeners() {
+            if (!window.electronAPI) return;
+            window.electronAPI.onFilesSelected(addFiles);
+            window.electronAPI.onOutputFolderSet((folder) => { outputFolder = folder; document.getElementById('outputFolderIndicator').style.display = 'flex'; document.getElementById('outputFolderPath').textContent = folder; showToast('Output folder set', 'success'); });
+            window.electronAPI.onMenuSelectAll(selectAll);
+            window.electronAPI.onMenuDeselect(clearSelection);
+            window.electronAPI.onMenuRemoveSelected(removeSelected);
+            window.electronAPI.onMenuClearAll(clearAll);
+            window.electronAPI.onMenuConvert(convertImages);
+            window.electronAPI.onMenuSaveAll(saveAllToFolder);
+            window.electronAPI.onMenuSaveZip(saveAsZip);
+            window.electronAPI.onMenuShortcuts(() => { document.getElementById('shortcutsModal').classList.add('active'); });
+        }
+
+        function setupWebFileInputs() {
+            document.getElementById('webFileInput').addEventListener('change', (e) => { const files = Array.from(e.target.files); if (files.length) processDroppedFiles(files); e.target.value = ''; });
+            document.getElementById('webFolderInput').addEventListener('change', (e) => { const files = Array.from(e.target.files); if (files.length) processDroppedFiles(files); e.target.value = ''; });
+            document.getElementById('dropZone').addEventListener('click', () => openFiles());
+        }
+
+        function setupTabs() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.dataset.tab;
+                    tab.parentElement.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    tab.parentElement.parentElement.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+        }
+
+        // === FILE INPUT ===
+        async function openFiles() { if (window.electronAPI) { await window.electronAPI.openFileDialog(); } else { document.getElementById('webFileInput').click(); } }
+        async function openFolder() { if (window.electronAPI) { await window.electronAPI.openFolderDialog(); } else { document.getElementById('webFolderInput').click(); } }
+        function selectWatermarkImage() { document.getElementById('watermarkImageInput').click(); }
+
+        function handleDrop(e) { e.preventDefault(); document.getElementById('dropZone').classList.remove('drag-over'); processDroppedFiles(Array.from(e.dataTransfer.files)); }
+
+        async function handlePaste(e) {
+            const items = e.clipboardData?.items;
+            if (items) { for (let item of items) { if (item.type.startsWith('image/')) { const file = item.getAsFile(); if (file) processDroppedFiles([file]); } } }
+        }
+
+        async function pasteFromClipboard() {
+            try { const items = await navigator.clipboard.read(); for (const item of items) { for (const type of item.types) { if (type.startsWith('image/')) { const blob = await item.getType(type); processDroppedFiles([new File([blob], `clipboard-${Date.now()}.png`, { type })]); } } } }
+            catch (err) { showToast('Unable to access clipboard', 'error'); }
+        }
+
+        async function processDroppedFiles(files) {
+            const validFiles = files.filter(f => f.type.startsWith('image/'));
+            if (validFiles.length === 0) return;
+            for (const file of validFiles) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => { images.push({ id: Date.now() + Math.random(), name: file.name, size: file.size, width: img.width, height: img.height, type: file.type, dataUrl: e.target.result, selected: false, addedIndex: images.length }); updateUI(); };
+                    img.onerror = () => { images.push({ id: Date.now() + Math.random(), name: file.name, size: file.size, width: 0, height: 0, type: file.type, dataUrl: e.target.result, selected: false, addedIndex: images.length }); updateUI(); };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+            showToast(`Added ${validFiles.length} image(s)`, 'success');
+        }
+
+        function addFiles(files) {
+            for (const file of files) {
+                const img = new Image();
+                img.onload = () => { images.push({ id: Date.now() + Math.random(), name: file.name, path: file.path, size: file.size, width: img.width, height: img.height, type: file.dataUrl.split(';')[0].split(':')[1], dataUrl: file.dataUrl, selected: false, addedIndex: images.length }); updateUI(); };
+                img.onerror = () => { images.push({ id: Date.now() + Math.random(), name: file.name, path: file.path, size: file.size, width: 0, height: 0, type: 'image/unknown', dataUrl: file.dataUrl, selected: false, addedIndex: images.length }); updateUI(); };
+                img.src = file.dataUrl;
+            }
+            showToast(`Added ${files.length} image(s)`, 'success');
+        }
+
+        // === SORT & FILTER ===
+        function getFilteredImages() {
+            let list = [...images];
+            if (currentFilter !== 'all') {
+                list = list.filter(img => {
+                    const t = img.type.toLowerCase();
+                    if (currentFilter === 'jpg') return t.includes('jpeg') || t.includes('jpg');
+                    if (currentFilter === 'png') return t.includes('png');
+                    if (currentFilter === 'webp') return t.includes('webp');
+                    if (currentFilter === 'gif') return t.includes('gif');
+                    return !t.includes('jpeg') && !t.includes('jpg') && !t.includes('png') && !t.includes('webp') && !t.includes('gif');
+                });
+            }
+            const mode = document.getElementById('sortMode').value;
+            if (mode === 'name') list.sort((a, b) => a.name.localeCompare(b.name));
+            else if (mode === 'size-asc') list.sort((a, b) => a.size - b.size);
+            else if (mode === 'size-desc') list.sort((a, b) => b.size - a.size);
+            else if (mode === 'dims') list.sort((a, b) => (b.width * b.height) - (a.width * a.height));
+            else list.sort((a, b) => a.addedIndex - b.addedIndex);
+            return list;
+        }
+
+        function sortImages() { renderImageGrid(); }
+        function filterImages(filter, btn) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-badge').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderImageGrid();
+        }
+
+        // === UI ===
+        function updateUI() {
+            const dropZone = document.getElementById('dropZone');
+            const imageGrid = document.getElementById('imageGrid');
+            const sortBar = document.getElementById('sortBar');
+            if (images.length === 0) { dropZone.style.display = 'flex'; imageGrid.style.display = 'none'; sortBar.style.display = 'none'; }
+            else { dropZone.style.display = 'none'; imageGrid.style.display = 'grid'; sortBar.style.display = 'flex'; renderImageGrid(); }
+            document.getElementById('imageCount').textContent = `${images.length} images`;
+            updateStats();
+            debounceSizeEstimate();
+        }
+
+        function renderImageGrid() {
+            const list = getFilteredImages();
+            document.getElementById('imageGrid').innerHTML = list.map(img => `
+                <div class="image-card ${img.selected ? 'selected' : ''}" data-id="${img.id}" onclick="toggleSelect(${img.id})" draggable="true">
+                    <div class="image-checkbox ${img.selected ? 'checked' : ''}"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></div>
+                    <button class="image-remove" onclick="removeImage(${img.id},event)"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                    <button class="image-zoom" onclick="openPreview(${img.id},event)" title="Preview"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg></button>
+                    <div class="image-preview-wrap"><img class="image-preview" src="${img.dataUrl}" alt="${img.name}"></div>
+                    <div class="image-info"><div class="image-name" title="${img.name}">${img.name}</div><div class="image-meta">${img.width}x${img.height} &bull; ${formatSize(img.size)}</div></div>
+                </div>`).join('');
+        }
+
+        function toggleSelect(id) { const img = images.find(i => i.id === id); if (img) { img.selected = !img.selected; renderImageGrid(); } }
+        function selectAll() { images.forEach(i => i.selected = true); renderImageGrid(); }
+        function clearSelection() { images.forEach(i => i.selected = false); renderImageGrid(); }
+        function removeImage(id, event) { event.stopPropagation(); images = images.filter(i => i.id !== id); updateUI(); }
+        function removeSelected() { const c = images.filter(i => i.selected).length; if (!c) return; images = images.filter(i => !i.selected); updateUI(); showToast(`Removed ${c} image(s)`, 'success'); }
+        function clearAll() { images = []; convertedImages = []; updateUI(); updateOutputList(); showToast('All cleared', 'success'); }
+
+        // === DRAG REORDER ===
+        function setupDragReorder() {
+            const grid = document.getElementById('imageGrid');
+            let dragId = null;
+            grid.addEventListener('dragstart', (e) => {
+                const card = e.target.closest('.image-card');
+                if (!card) return;
+                dragId = parseFloat(card.dataset.id);
+                e.dataTransfer.effectAllowed = 'move';
+                setTimeout(() => card.style.opacity = '0.4', 0);
+            });
+            grid.addEventListener('dragend', (e) => { const card = e.target.closest('.image-card'); if (card) card.style.opacity = '1'; dragId = null; });
+            grid.addEventListener('dragover', (e) => {
+                e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+                const card = e.target.closest('.image-card');
+                grid.querySelectorAll('.image-card').forEach(c => c.classList.remove('drag-over-card'));
+                if (card) card.classList.add('drag-over-card');
+            });
+            grid.addEventListener('dragleave', (e) => { const card = e.target.closest('.image-card'); if (card) card.classList.remove('drag-over-card'); });
+            grid.addEventListener('drop', (e) => {
+                e.preventDefault();
+                grid.querySelectorAll('.image-card').forEach(c => c.classList.remove('drag-over-card'));
+                const card = e.target.closest('.image-card');
+                if (!card || dragId === null) return;
+                const dropId = parseFloat(card.dataset.id);
+                if (dragId === dropId) return;
+                const fromIdx = images.findIndex(i => i.id === dragId);
+                const toIdx = images.findIndex(i => i.id === dropId);
+                if (fromIdx < 0 || toIdx < 0) return;
+                const [moved] = images.splice(fromIdx, 1);
+                images.splice(toIdx, 0, moved);
+                images.forEach((img, i) => img.addedIndex = i);
+                document.getElementById('sortMode').value = 'added';
+                renderImageGrid();
+                showToast('Reordered', 'success');
+            });
+        }
+
+        // === ADJUSTMENTS ===
+        function getAdjustments() {
+            return {
+                brightness: parseInt(document.getElementById('adjBrightness').value),
+                contrast: parseInt(document.getElementById('adjContrast').value),
+                saturation: parseInt(document.getElementById('adjSaturation').value),
+                blur: parseInt(document.getElementById('adjBlur').value),
+                sharpness: parseInt(document.getElementById('adjSharpness').value),
+                hue: parseInt(document.getElementById('adjHue').value),
+                grayscale: document.getElementById('adjGrayscale').classList.contains('active'),
+                sepia: document.getElementById('adjSepia').classList.contains('active'),
+                invert: document.getElementById('adjInvert').classList.contains('active'),
+            };
+        }
+
+        function getEffects() {
+            return {
+                vignette: parseInt(document.getElementById('fxVignette').value),
+                grain: parseInt(document.getElementById('fxGrain').value),
+                tintColor: document.getElementById('fxTintColor').value,
+                tintAmount: parseInt(document.getElementById('fxTintAmount').value),
+            };
+        }
+
+        function getBorderSettings() {
+            if (!document.getElementById('enableBorder').checked) return null;
+            return {
+                width: parseInt(document.getElementById('borderWidth').value),
+                padding: parseInt(document.getElementById('borderPadding').value),
+                color: document.getElementById('borderColor').value,
+            };
+        }
+
+        function resetAdj(id) {
+            document.getElementById(id).value = 0;
+            if (id === 'adjHue') document.getElementById(id + 'Val').innerHTML = '0&#176;';
+            else document.getElementById(id + 'Val').textContent = '0';
+        }
+        function toggleAdj(id) { document.getElementById(id).classList.toggle('active'); }
+
+        function applyPreset(name) {
+            const presets = {
+                reset: { brightness: 0, contrast: 0, saturation: 0, blur: 0, sharpness: 0, grayscale: false, sepia: false, invert: false },
+                vivid: { brightness: 10, contrast: 20, saturation: 40, blur: 0, sharpness: 15, grayscale: false, sepia: false, invert: false },
+                muted: { brightness: -5, contrast: -10, saturation: -40, blur: 0, sharpness: 0, grayscale: false, sepia: false, invert: false },
+                bw: { brightness: 5, contrast: 15, saturation: 0, blur: 0, sharpness: 10, grayscale: true, sepia: false, invert: false },
+                vintage: { brightness: -5, contrast: 10, saturation: -20, blur: 0, sharpness: 0, grayscale: false, sepia: true, invert: false },
+                cold: { brightness: 0, contrast: 5, saturation: -15, blur: 0, sharpness: 5, grayscale: false, sepia: false, invert: false },
+            };
+            const p = presets[name]; if (!p) return;
+            ['brightness', 'contrast', 'saturation', 'blur', 'sharpness'].forEach(k => { const id = 'adj' + k.charAt(0).toUpperCase() + k.slice(1); document.getElementById(id).value = p[k]; document.getElementById(id + 'Val').textContent = p[k]; });
+            document.getElementById('adjHue').value = 0; document.getElementById('adjHueVal').innerHTML = '0&#176;';
+            ['grayscale', 'sepia', 'invert'].forEach(k => { const id = 'adj' + k.charAt(0).toUpperCase() + k.slice(1); document.getElementById(id).classList.toggle('active', p[k]); });
+            showToast(`Preset: ${name}`, 'success');
+        }
+
+        // === CROP ===
+        function setCropRatio(ratio, btn) { cropRatio = ratio; document.querySelectorAll('.settings-panel .crop-preset').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+
+        // === VISUAL CROP TOOL ===
+        function openVisualCrop() {
+            const sel = images.find(i => i.selected) || images[0];
+            if (!sel) { showToast('No image available', 'warning'); return; }
+            const canvas = document.getElementById('cropCanvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            img.onload = () => {
+                const maxW = window.innerWidth * 0.75, maxH = window.innerHeight * 0.7;
+                cropState.scale = Math.min(maxW / img.width, maxH / img.height, 1);
+                canvas.width = img.width * cropState.scale;
+                canvas.height = img.height * cropState.scale;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                cropState.imgId = sel.id;
+                cropState.imgW = img.width; cropState.imgH = img.height;
+                // Default selection: 80% centered
+                const m = 0.1;
+                cropState.sx = canvas.width * m; cropState.sy = canvas.height * m;
+                cropState.sw = canvas.width * (1 - 2 * m); cropState.sh = canvas.height * (1 - 2 * m);
+                updateCropSelection();
+                document.getElementById('cropSelection').style.display = 'block';
+                document.getElementById('cropOverlay').classList.add('active');
+            };
+            img.src = sel.dataUrl;
+        }
+
+        function updateCropSelection() {
+            const s = document.getElementById('cropSelection');
+            s.style.left = cropState.sx + 'px'; s.style.top = cropState.sy + 'px';
+            s.style.width = cropState.sw + 'px'; s.style.height = cropState.sh + 'px';
+            const realW = Math.round(cropState.sw / cropState.scale);
+            const realH = Math.round(cropState.sh / cropState.scale);
+            document.getElementById('cropDimsDisplay').textContent = `${realW} x ${realH}`;
+        }
+
+        function setupCropTool() {
+            const wrap = document.getElementById('cropCanvasWrap');
+            const canvas = document.getElementById('cropCanvas');
+            let mode = null; // 'draw', 'move', 'tl', 'tr', 'bl', 'br'
+            let startX, startY, origRect;
+
+            const getPos = (e) => {
+                const r = canvas.getBoundingClientRect();
+                return { x: e.clientX - r.left, y: e.clientY - r.top };
+            };
+
+            const constrainRatio = (w, h, handle) => {
+                if (cropRatio === 'free') return { w, h };
+                const parts = cropRatio.split(':').map(Number);
+                const ratio = parts[0] / parts[1];
+                if (handle === 'br' || handle === 'tl') {
+                    h = w / ratio;
+                } else {
+                    h = w / ratio;
+                }
+                return { w: Math.abs(w), h: Math.abs(h) };
+            };
+
+            wrap.addEventListener('mousedown', (e) => {
+                const handle = e.target.closest('.crop-handle');
+                const sel = document.getElementById('cropSelection');
+                const p = getPos(e);
+                origRect = { sx: cropState.sx, sy: cropState.sy, sw: cropState.sw, sh: cropState.sh };
+                startX = p.x; startY = p.y;
+
+                if (handle) {
+                    mode = handle.dataset.handle;
+                } else if (p.x >= cropState.sx && p.x <= cropState.sx + cropState.sw && p.y >= cropState.sy && p.y <= cropState.sy + cropState.sh) {
+                    mode = 'move';
+                    wrap.style.cursor = 'move';
+                } else {
+                    mode = 'draw';
+                    cropState.sx = p.x; cropState.sy = p.y; cropState.sw = 1; cropState.sh = 1;
+                }
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!mode) return;
+                const p = getPos(e);
+                const dx = p.x - startX, dy = p.y - startY;
+                const cw = canvas.width, ch = canvas.height;
+
+                if (mode === 'move') {
+                    cropState.sx = Math.max(0, Math.min(cw - cropState.sw, origRect.sx + dx));
+                    cropState.sy = Math.max(0, Math.min(ch - cropState.sh, origRect.sy + dy));
+                } else if (mode === 'draw') {
+                    let w = p.x - cropState.sx, h = p.y - cropState.sy;
+                    if (cropRatio !== 'free') { const c = constrainRatio(w, h, 'br'); w = c.w; h = c.h; }
+                    cropState.sw = Math.max(10, Math.min(w, cw - cropState.sx));
+                    cropState.sh = Math.max(10, Math.min(h, ch - cropState.sy));
+                } else if (mode === 'br') {
+                    let w = origRect.sw + dx, h = origRect.sh + dy;
+                    if (cropRatio !== 'free') { const c = constrainRatio(w, h, 'br'); w = c.w; h = c.h; }
+                    cropState.sw = Math.max(10, Math.min(w, cw - cropState.sx));
+                    cropState.sh = Math.max(10, Math.min(h, ch - cropState.sy));
+                } else if (mode === 'tl') {
+                    let newX = origRect.sx + dx, newY = origRect.sy + dy;
+                    let w = origRect.sw - dx, h = origRect.sh - dy;
+                    if (cropRatio !== 'free') { const c = constrainRatio(w, h, 'tl'); w = c.w; h = c.h; newX = origRect.sx + origRect.sw - w; newY = origRect.sy + origRect.sh - h; }
+                    if (newX >= 0 && w > 10) { cropState.sx = newX; cropState.sw = w; }
+                    if (newY >= 0 && h > 10) { cropState.sy = newY; cropState.sh = h; }
+                } else if (mode === 'tr') {
+                    let w = origRect.sw + dx, newY = origRect.sy + dy, h = origRect.sh - dy;
+                    if (cropRatio !== 'free') { const c = constrainRatio(w, h, 'tr'); w = c.w; h = c.h; newY = origRect.sy + origRect.sh - h; }
+                    cropState.sw = Math.max(10, Math.min(w, cw - cropState.sx));
+                    if (newY >= 0 && h > 10) { cropState.sy = newY; cropState.sh = h; }
+                } else if (mode === 'bl') {
+                    let newX = origRect.sx + dx, w = origRect.sw - dx, h = origRect.sh + dy;
+                    if (cropRatio !== 'free') { const c = constrainRatio(w, h, 'bl'); w = c.w; h = c.h; newX = origRect.sx + origRect.sw - w; }
+                    if (newX >= 0 && w > 10) { cropState.sx = newX; cropState.sw = w; }
+                    cropState.sh = Math.max(10, Math.min(h, ch - cropState.sy));
+                }
+                updateCropSelection();
+            });
+
+            document.addEventListener('mouseup', () => { mode = null; wrap.style.cursor = 'crosshair'; });
+        }
+
+        function setCropRatioVisual(ratio, btn) {
+            cropRatio = ratio;
+            document.querySelectorAll('.crop-overlay .crop-preset').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            // Also sync sidebar presets
+            document.querySelectorAll('.settings-panel .crop-preset').forEach(b => { b.classList.toggle('active', b.dataset.ratio === ratio); });
+        }
+
+        function applyCrop() {
+            const s = cropState.scale;
+            document.getElementById('enableCrop').checked = true;
+            document.getElementById('cropOptions').style.display = 'block';
+            document.getElementById('cropX').value = Math.round(cropState.sx / s);
+            document.getElementById('cropY').value = Math.round(cropState.sy / s);
+            document.getElementById('cropW').value = Math.round(cropState.sw / s);
+            document.getElementById('cropH').value = Math.round(cropState.sh / s);
+            closeCrop();
+            showToast('Crop region applied', 'success');
+        }
+
+        function closeCrop() { document.getElementById('cropOverlay').classList.remove('active'); }
+
+        // === CONVERSION ===
+        async function convertImages() { if (images.length === 0) { showToast('No images to convert', 'warning'); return; } await doConvert(images); }
+        async function convertSelected() { const sel = images.filter(i => i.selected); if (sel.length === 0) { showToast('No images selected', 'warning'); return; } await doConvert(sel); }
+
+        async function doConvert(list) {
+            const format = document.getElementById('outputFormat').value;
+            const quality = parseInt(document.getElementById('quality').value) / 100;
+            const multiFormat = document.getElementById('enableMultiFormat').checked;
+            const autoOpt = document.getElementById('enableAutoOpt').checked;
+            const autoTarget = parseInt(document.getElementById('autoOptTarget')?.value || 200) * 1024;
+            const progress = document.getElementById('progressContainer');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            const progressPercent = document.getElementById('progressPercent');
+            progress.classList.add('active');
+            convertedImages = [];
+            counterIndex = 0;
+
+            // Build format list
+            let formats = [format];
+            if (multiFormat) {
+                const checked = [...document.querySelectorAll('.mf-check input:checked')].map(c => c.value);
+                if (checked.length > 0) formats = [...new Set(checked)];
+            }
+
+            const totalOps = list.length * formats.length;
+            let opIdx = 0;
+
+            for (let i = 0; i < list.length; i++) {
+                const img = list[i];
+                for (const fmt of formats) {
+                    opIdx++;
+                    const pct = (opIdx / totalOps) * 100;
+                    progressText.textContent = `Converting ${img.name} -> ${fmt.toUpperCase()}...`;
+                    progressPercent.textContent = Math.round(pct) + '%';
+                    progressFill.style.width = pct + '%';
+                    try {
+                        if (autoOpt && ['jpeg','webp','avif'].includes(fmt)) {
+                            convertedImages.push(await autoOptimizeImage(img, fmt, autoTarget));
+                        } else {
+                            convertedImages.push(await convertImage(img, fmt, quality));
+                        }
+                    } catch (err) { console.error(err); showToast(`Failed: ${img.name}`, 'error'); }
+                    await new Promise(r => setTimeout(r, 30));
+                }
+            }
+            progress.classList.remove('active');
+            updateOutputList(); updateStats();
+            document.getElementById('saveAllBtn').disabled = convertedImages.length === 0;
+            document.getElementById('saveZipBtn').disabled = convertedImages.length === 0;
+            document.getElementById('savePdfBtn').disabled = convertedImages.length === 0;
+            document.getElementById('faviconBtn').disabled = images.length === 0;
+            showToast(`Converted ${convertedImages.length} image(s)`, 'success');
+        }
+
+        async function autoOptimizeImage(img, format, targetBytes) {
+            let lo = 1, hi = 100, best = null;
+            for (let iter = 0; iter < 8; iter++) {
+                const mid = Math.round((lo + hi) / 2);
+                const result = await convertImage(img, format, mid / 100);
+                if (result.size <= targetBytes) { best = result; lo = mid + 1; }
+                else { hi = mid - 1; }
+            }
+            if (!best) best = await convertImage(img, format, lo / 100);
+            return best;
+        }
+
+        async function convertImage(img, format, quality) {
+            return new Promise((resolve, reject) => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const image = new Image();
+                const adj = getAdjustments();
+                const fx = getEffects();
+                const border = getBorderSettings();
+
+                image.onload = () => {
+                    let w = image.width, h = image.height;
+                    let sx = 0, sy = 0, sw = w, sh = h;
+
+                    // Crop
+                    if (document.getElementById('enableCrop').checked) {
+                        const cx = parseInt(document.getElementById('cropX').value) || 0;
+                        const cy = parseInt(document.getElementById('cropY').value) || 0;
+                        const cw = parseInt(document.getElementById('cropW').value) || w - cx;
+                        const ch = parseInt(document.getElementById('cropH').value) || h - cy;
+                        sx = Math.min(cx, w); sy = Math.min(cy, h);
+                        sw = Math.min(cw, w - sx); sh = Math.min(ch, h - sy);
+                        w = sw; h = sh;
+                    }
+
+                    // Resize
+                    if (document.getElementById('enableResize').checked) {
+                        const mode = document.getElementById('resizeMode').value;
+                        const aspect = document.getElementById('maintainAspect').checked;
+                        if (mode === 'dimensions') { const nw = parseInt(document.getElementById('resizeWidth').value) || w; const nh = parseInt(document.getElementById('resizeHeight').value) || h; if (aspect) { const r = Math.min(nw / w, nh / h); w = Math.round(w * r); h = Math.round(h * r); } else { w = nw; h = nh; } }
+                        else if (mode === 'percentage') { const p = parseInt(document.getElementById('resizePercentage').value) / 100; w = Math.round(w * p); h = Math.round(h * p); }
+                        else if (mode === 'maxWidth') { const mw = parseInt(document.getElementById('resizeWidth').value); if (mw && w > mw) { h = Math.round(h * mw / w); w = mw; } }
+                        else if (mode === 'maxHeight') { const mh = parseInt(document.getElementById('resizeHeight').value); if (mh && h > mh) { w = Math.round(w * mh / h); h = mh; } }
+                    }
+
+                    // Border sizing
+                    let bw = 0, bp = 0;
+                    if (border) { bw = border.width; bp = border.padding; }
+                    const totalW = w + (bw + bp) * 2;
+                    const totalH = h + (bw + bp) * 2;
+
+                    canvas.width = totalW; canvas.height = totalH;
+
+                    // Background fill (replace transparency)
+                    if (document.getElementById('enableBgFill').checked) {
+                        ctx.fillStyle = document.getElementById('bgFillColor').value;
+                        ctx.fillRect(0, 0, totalW, totalH);
+                    }
+
+                    // Draw border background
+                    if (border) { ctx.fillStyle = border.color; ctx.fillRect(0, 0, totalW, totalH); }
+
+                    // Build CSS filter
+                    let filters = [];
+                    const bri = 1 + adj.brightness / 100, con = 1 + adj.contrast / 100, sat = 1 + adj.saturation / 100;
+                    if (bri !== 1) filters.push(`brightness(${bri})`);
+                    if (con !== 1) filters.push(`contrast(${con})`);
+                    if (sat !== 1) filters.push(`saturate(${sat})`);
+                    if (adj.blur > 0) filters.push(`blur(${adj.blur}px)`);
+                    if (adj.hue > 0) filters.push(`hue-rotate(${adj.hue}deg)`);
+                    if (adj.grayscale) filters.push('grayscale(1)');
+                    if (adj.sepia) filters.push('sepia(1)');
+                    if (adj.invert) filters.push('invert(1)');
+                    if (filters.length) ctx.filter = filters.join(' ');
+
+                    // Transform
+                    const rot = parseInt(document.getElementById('rotation').value);
+                    const fh = document.getElementById('flipH').checked;
+                    const fv = document.getElementById('flipV').checked;
+                    const offX = bw + bp, offY = bw + bp;
+
+                    ctx.save();
+                    if (rot === 90 || rot === 270) { canvas.width = totalH; canvas.height = totalW; if (border) { ctx.fillStyle = border.color; ctx.fillRect(0, 0, canvas.width, canvas.height); } }
+                    ctx.translate(canvas.width / 2, canvas.height / 2);
+                    ctx.rotate(rot * Math.PI / 180);
+                    ctx.scale(fh ? -1 : 1, fv ? -1 : 1);
+                    if (rot === 90 || rot === 270) ctx.drawImage(image, sx, sy, sw, sh, -h / 2 - offY, -w / 2 - offX, h + (bw+bp)*2, w + (bw+bp)*2);
+                    // Simplified: draw image into the inner area
+                    ctx.drawImage(image, sx, sy, sw, sh, -w / 2, -h / 2, w, h);
+                    ctx.restore();
+                    ctx.filter = 'none';
+
+                    // Sharpness
+                    if (adj.sharpness > 0) applySharpness(ctx, canvas.width, canvas.height, adj.sharpness / 100);
+
+                    // Effects
+                    if (fx.vignette > 0) applyVignette(ctx, canvas.width, canvas.height, fx.vignette / 100);
+                    if (fx.grain > 0) applyGrain(ctx, canvas.width, canvas.height, fx.grain / 100);
+                    if (fx.tintAmount > 0) applyTint(ctx, canvas.width, canvas.height, fx.tintColor, fx.tintAmount / 100);
+
+                    // Watermark
+                    if (document.getElementById('enableWatermark').checked) applyWatermark(ctx, canvas.width, canvas.height);
+
+                    const mime = getMimeType(format);
+                    const q = ['jpeg', 'webp', 'avif'].includes(format) ? quality : undefined;
+                    canvas.toBlob((blob) => {
+                        if (!blob) return reject(new Error('Blob failed'));
+                        const name = generateOutputName(img.name, format);
+                        const url = URL.createObjectURL(blob);
+                        blob.arrayBuffer().then(buffer => {
+                            resolve({ id: Date.now() + Math.random(), name, originalName: img.name, originalSize: img.size, originalDataUrl: img.dataUrl, size: blob.size, width: canvas.width, height: canvas.height, format, buffer: new Uint8Array(buffer), url });
+                        });
+                    }, mime, q);
+                };
+                image.onerror = () => reject(new Error('Load failed'));
+                image.src = img.dataUrl;
+            });
+        }
+
+        function applySharpness(ctx, w, h, amount) {
+            const tc = document.createElement('canvas'); tc.width = w; tc.height = h;
+            const tctx = tc.getContext('2d'); tctx.filter = 'blur(1px)'; tctx.drawImage(ctx.canvas, 0, 0);
+            const od = ctx.getImageData(0, 0, w, h), bd = tctx.getImageData(0, 0, w, h);
+            const s = amount * 2;
+            for (let i = 0; i < od.data.length; i += 4) {
+                od.data[i] = Math.min(255, Math.max(0, od.data[i] + (od.data[i] - bd.data[i]) * s));
+                od.data[i+1] = Math.min(255, Math.max(0, od.data[i+1] + (od.data[i+1] - bd.data[i+1]) * s));
+                od.data[i+2] = Math.min(255, Math.max(0, od.data[i+2] + (od.data[i+2] - bd.data[i+2]) * s));
+            }
+            ctx.putImageData(od, 0, 0);
+        }
+
+        function applyVignette(ctx, w, h, amount) {
+            const grd = ctx.createRadialGradient(w/2, h/2, Math.min(w,h) * 0.3, w/2, h/2, Math.max(w,h) * 0.7);
+            grd.addColorStop(0, 'rgba(0,0,0,0)');
+            grd.addColorStop(1, `rgba(0,0,0,${amount * 0.8})`);
+            ctx.fillStyle = grd;
+            ctx.fillRect(0, 0, w, h);
+        }
+
+        function applyGrain(ctx, w, h, amount) {
+            const imgData = ctx.getImageData(0, 0, w, h);
+            const strength = amount * 60;
+            for (let i = 0; i < imgData.data.length; i += 4) {
+                const noise = (Math.random() - 0.5) * strength;
+                imgData.data[i] = Math.min(255, Math.max(0, imgData.data[i] + noise));
+                imgData.data[i+1] = Math.min(255, Math.max(0, imgData.data[i+1] + noise));
+                imgData.data[i+2] = Math.min(255, Math.max(0, imgData.data[i+2] + noise));
+            }
+            ctx.putImageData(imgData, 0, 0);
+        }
+
+        function applyTint(ctx, w, h, color, amount) {
+            ctx.save();
+            ctx.globalAlpha = amount * 0.4;
+            ctx.globalCompositeOperation = 'multiply';
+            ctx.fillStyle = color;
+            ctx.fillRect(0, 0, w, h);
+            ctx.restore();
+        }
+
+        function applyWatermark(ctx, cw, ch) {
+            const pos = document.getElementById('watermarkPosition').value;
+            const tab = document.querySelector('.tab.active')?.dataset.tab;
+            if (tab === 'textWatermark') {
+                const text = document.getElementById('watermarkText').value; if (!text) return;
+                const fs = parseInt(document.getElementById('watermarkFontSize').value);
+                const color = document.getElementById('watermarkColor').value;
+                const opacity = parseInt(document.getElementById('watermarkOpacity').value) / 100;
+                ctx.save(); ctx.globalAlpha = opacity; ctx.font = `${fs}px Arial, sans-serif`; ctx.fillStyle = color;
+                const tw = ctx.measureText(text).width, th = fs;
+                getPositions(pos, cw, ch, tw, th).forEach(p => ctx.fillText(text, p.x, p.y + th));
+                ctx.restore();
+            } else if (tab === 'imageWatermark' && watermarkImage) {
+                const size = parseInt(document.getElementById('watermarkSize').value) / 100;
+                const ww = cw * size, wh = (watermarkImage.height / watermarkImage.width) * ww;
+                ctx.save(); ctx.globalAlpha = 0.7;
+                getPositions(pos, cw, ch, ww, wh).forEach(p => ctx.drawImage(watermarkImage, p.x, p.y, ww, wh));
+                ctx.restore();
+            }
+        }
+
+        function getPositions(pos, cw, ch, iw, ih) {
+            const pad = 20, positions = [];
+            switch (pos) {
+                case 'topLeft': positions.push({x:pad,y:pad}); break;
+                case 'topRight': positions.push({x:cw-iw-pad,y:pad}); break;
+                case 'bottomLeft': positions.push({x:pad,y:ch-ih-pad}); break;
+                case 'bottomRight': positions.push({x:cw-iw-pad,y:ch-ih-pad}); break;
+                case 'center': positions.push({x:(cw-iw)/2,y:(ch-ih)/2}); break;
+                case 'tile': for (let y=pad;y<ch;y+=ih+100) for (let x=pad;x<cw;x+=iw+100) positions.push({x,y}); break;
+            }
+            return positions;
+        }
+
+        function generateOutputName(orig, format) {
+            const pattern = document.getElementById('namingPattern').value;
+            const val = document.getElementById('namingValue').value;
+            const base = orig.replace(/\.[^.]+$/, '');
+            const ext = getExtension(format);
+            switch (pattern) {
+                case 'suffix': return base + (val || '_converted') + '.' + ext;
+                case 'prefix': return (val || 'converted_') + base + '.' + ext;
+                case 'counter': counterIndex++; return (val || 'photo') + '_' + String(counterIndex).padStart(3, '0') + '.' + ext;
+                case 'custom': return (val || '{name}').replace('{name}', base) + '.' + ext;
+                default: return base + '.' + ext;
+            }
+        }
+
+        function getMimeType(f) { return {jpeg:'image/jpeg',png:'image/png',webp:'image/webp',gif:'image/gif',bmp:'image/bmp',ico:'image/x-icon',avif:'image/avif'}[f]||'image/png'; }
+        function getExtension(f) { return {jpeg:'jpg',png:'png',webp:'webp',gif:'gif',bmp:'bmp',ico:'ico',avif:'avif'}[f]||'png'; }
+
+        // === SIZE ESTIMATE ===
+        function debounceSizeEstimate() { clearTimeout(sizeEstimateTimer); sizeEstimateTimer = setTimeout(updateSizeEstimate, 300); }
+        async function updateSizeEstimate() {
+            if (images.length === 0) { document.getElementById('sizeEstimateText').textContent = 'Estimated size: --'; document.getElementById('sizeEstimate').classList.remove('active'); return; }
+            const sample = images[0], format = document.getElementById('outputFormat').value, quality = parseInt(document.getElementById('quality').value) / 100;
+            const mime = getMimeType(format), q = ['jpeg','webp','avif'].includes(format) ? quality : undefined;
+            try {
+                const img = new Image(); await new Promise((r, j) => { img.onload = r; img.onerror = j; img.src = sample.dataUrl; });
+                const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; c.getContext('2d').drawImage(img, 0, 0);
+                const blob = await new Promise(r => c.toBlob(r, mime, q));
+                if (blob) { const ratio = blob.size / sample.size; const totalEst = images.reduce((s, i) => s + i.size * ratio, 0); document.getElementById('sizeEstimate').classList.add('active'); document.getElementById('sizeEstimateText').textContent = `~${formatSize(totalEst)} total (${(ratio*100).toFixed(0)}% of original)`; }
+            } catch(e) {}
+        }
+
+        // === OUTPUT ===
+        function updateOutputList() {
+            document.getElementById('outputCount').textContent = `${convertedImages.length} files ready`;
+            const list = document.getElementById('outputList');
+            if (convertedImages.length === 0) { list.innerHTML = `<div class="empty-state"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg><p>Converted images will appear here</p></div>`; return; }
+            list.innerHTML = convertedImages.map(img => {
+                const change = ((img.size - img.originalSize) / img.originalSize * 100).toFixed(1);
+                const cls = change < 0 ? 'reduced' : 'increased';
+                const txt = change < 0 ? change + '%' : '+' + change + '%';
+                return `<div class="output-item" onclick="openCompare('${img.id}')"><img class="output-thumb" src="${img.url}" alt=""><div class="output-details"><div class="output-name" title="${img.name}">${img.name}</div><div class="output-status"><span class="status-dot success"></span>${formatSize(img.size)}<span class="size-change ${cls}">${txt}</span></div></div><button class="output-action-sm" onclick="event.stopPropagation();copyBase64('${img.id}')" title="Copy as Base64"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></button><button class="output-download" onclick="event.stopPropagation();saveSingle('${img.id}')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg></button></div>`;
+            }).join('');
+        }
+
+        // === STATS ===
+        function updateStats() {
+            document.getElementById('statImages').textContent = images.length;
+            const totalIn = images.reduce((s, i) => s + i.size, 0);
+            document.getElementById('statInputSize').textContent = formatSize(totalIn);
+            if (convertedImages.length > 0) {
+                const totalOut = convertedImages.reduce((s, i) => s + i.size, 0);
+                document.getElementById('statOutputSize').textContent = formatSize(totalOut);
+                const saved = totalIn - totalOut;
+                document.getElementById('statSaved').textContent = saved > 0 ? `-${formatSize(saved)} (${((saved/totalIn)*100).toFixed(1)}%)` : '+' + formatSize(Math.abs(saved));
+            } else {
+                document.getElementById('statOutputSize').textContent = '0 B';
+                document.getElementById('statSaved').textContent = '--';
+            }
+        }
+
+        // === SAVE ===
+        async function saveSingle(id) {
+            const img = convertedImages.find(i => i.id == id); if (!img) return;
+            if (window.electronAPI) { const r = await window.electronAPI.saveFile({buffer:Array.from(img.buffer),fileName:img.name}); if(r.success) showToast('File saved','success'); }
+            else { const a = document.createElement('a'); a.href = img.url; a.download = img.name; a.click(); showToast('Download started','success'); }
+        }
+
+        async function saveAllToFolder() {
+            if (convertedImages.length === 0) return;
+            if (window.electronAPI) { const files = convertedImages.map(i=>({name:i.name,buffer:Array.from(i.buffer)})); const r = await window.electronAPI.saveFilesToFolder(files); if(r.success) showToast(`Saved ${r.count} files`,'success'); }
+            else { for (const img of convertedImages) { const a = document.createElement('a'); a.href = img.url; a.download = img.name; a.click(); await new Promise(r => setTimeout(r, 200)); } showToast(`Downloaded ${convertedImages.length} file(s)`,'success'); }
+        }
+
+        async function saveAsZip() {
+            if (convertedImages.length === 0) return;
+            if (window.electronAPI) { const files = convertedImages.map(i=>({name:i.name,buffer:Array.from(i.buffer)})); const r = await window.electronAPI.saveAsZip(files); if(r.success) showToast(`ZIP saved (${formatSize(r.size)})`,'success'); }
+            else {
+                if (typeof JSZip === 'undefined') { showToast('Loading ZIP library...','warning'); await new Promise((r,j) => { const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'; s.onload=r; s.onerror=j; document.head.appendChild(s); }); }
+                const zip = new JSZip(); for (const img of convertedImages) zip.file(img.name, img.buffer);
+                const blob = await zip.generateAsync({type:'blob'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'ImageForge-converted.zip'; a.click(); URL.revokeObjectURL(a.href);
+                showToast(`ZIP downloaded (${formatSize(blob.size)})`,'success');
+            }
+        }
+
+        // === PREVIEW ===
+        function openPreview(id, event) {
+            event.stopPropagation();
+            const img = images.find(i => i.id === id); if (!img) return;
+            document.getElementById('previewImage').src = img.dataUrl;
+            document.getElementById('previewInfo').textContent = `${img.name} \u2014 ${img.width}x${img.height} \u2014 ${formatSize(img.size)}`;
+            document.getElementById('previewOverlay').classList.add('active');
+        }
+        function closePreview() { document.getElementById('previewOverlay').classList.remove('active'); }
+        document.getElementById('previewOverlay').addEventListener('click', (e) => { if (e.target === document.getElementById('previewOverlay')) closePreview(); });
+
+        // === COMPARE ===
+        function openCompare(id) {
+            const img = convertedImages.find(i => i.id == id); if (!img || !img.originalDataUrl) return;
+            const beforeImg = document.getElementById('compareBefore'), afterImg = document.getElementById('compareAfterImg');
+            beforeImg.onload = () => {
+                const wrapper = document.getElementById('compareWrapper');
+                const wrapW = Math.min(beforeImg.naturalWidth, window.innerWidth * 0.8);
+                const scale = wrapW / beforeImg.naturalWidth;
+                const wrapH = beforeImg.naturalHeight * scale;
+                wrapper.style.width = wrapW + 'px'; wrapper.style.height = wrapH + 'px';
+                beforeImg.style.width = wrapW + 'px'; afterImg.style.width = wrapW + 'px';
+                setComparePosition(wrapW / 2);
+                const change = ((img.size - img.originalSize) / img.originalSize * 100).toFixed(1);
+                const changeStr = change < 0 ? change + '%' : '+' + change + '%';
+                document.getElementById('compareInfoBar').innerHTML = `<span>Original: ${formatSize(img.originalSize)}</span><span>Converted: ${formatSize(img.size)} (${changeStr})</span><span>${img.width}x${img.height} ${img.format.toUpperCase()}</span>`;
+            };
+            beforeImg.src = img.originalDataUrl; afterImg.src = img.url;
+            document.getElementById('compareOverlay').classList.add('active');
+        }
+        function closeCompare() { document.getElementById('compareOverlay').classList.remove('active'); }
+        function setComparePosition(x) { const w = document.getElementById('compareWrapper').offsetWidth; x = Math.max(0, Math.min(w, x)); document.getElementById('compareAfter').style.width = x + 'px'; document.getElementById('compareSlider').style.left = x + 'px'; }
+
+        function setupCompareSlider() {
+            const wrapper = document.getElementById('compareWrapper'); let dragging = false;
+            const onMove = (e) => { if (!dragging) return; const rect = wrapper.getBoundingClientRect(); setComparePosition((e.clientX || e.touches?.[0]?.clientX || 0) - rect.left); };
+            wrapper.addEventListener('mousedown', (e) => { dragging = true; onMove(e); });
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', () => dragging = false);
+            wrapper.addEventListener('touchstart', (e) => { dragging = true; onMove(e); }, {passive:true});
+            document.addEventListener('touchmove', (e) => onMove(e), {passive:true});
+            document.addEventListener('touchend', () => dragging = false);
+        }
+        document.getElementById('compareOverlay').addEventListener('click', (e) => { if (e.target === document.getElementById('compareOverlay')) closeCompare(); });
+
+        // === UTILS ===
+        function formatSize(bytes) { if (bytes === 0) return '0 B'; const k = 1024, sizes = ['B','KB','MB','GB']; const i = Math.floor(Math.log(bytes)/Math.log(k)); return parseFloat((bytes/Math.pow(k,i)).toFixed(1))+' '+sizes[i]; }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer'), toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icons = { success:'<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>', error:'<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>', warning:'<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>' };
+            toast.innerHTML = `<svg class="toast-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">${icons[type]}</svg><span class="toast-message">${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.animation = 'slideIn 0.3s ease reverse'; setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+        document.querySelectorAll('.modal-overlay').forEach(m => { m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('active'); }); });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') { document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active')); closePreview(); closeCompare(); closeCrop(); closeAnnotate(); closeCollage(); }
+        });
+
+        // === SOCIAL MEDIA PRESETS ===
+        function applySocial(w, h) {
+            document.getElementById('enableResize').checked = true;
+            document.getElementById('resizeOptions').style.display = 'block';
+            document.getElementById('resizeMode').value = 'dimensions';
+            document.getElementById('dimensionInputs').style.display = 'grid';
+            document.getElementById('percentageInput').style.display = 'none';
+            document.getElementById('resizeWidth').value = w;
+            document.getElementById('resizeHeight').value = h;
+            document.getElementById('maintainAspect').checked = false;
+            showToast(`Resize set to ${w}x${h}`, 'success');
+        }
+
+        // === SETTINGS PROFILES ===
+        function getProfileData() {
+            return {
+                outputFormat: document.getElementById('outputFormat').value,
+                quality: document.getElementById('quality').value,
+                enableResize: document.getElementById('enableResize').checked,
+                resizeMode: document.getElementById('resizeMode').value,
+                resizeWidth: document.getElementById('resizeWidth').value,
+                resizeHeight: document.getElementById('resizeHeight').value,
+                resizePercentage: document.getElementById('resizePercentage')?.value,
+                maintainAspect: document.getElementById('maintainAspect').checked,
+                enableCrop: document.getElementById('enableCrop').checked,
+                cropX: document.getElementById('cropX').value, cropY: document.getElementById('cropY').value,
+                cropW: document.getElementById('cropW').value, cropH: document.getElementById('cropH').value,
+                adjBrightness: document.getElementById('adjBrightness').value,
+                adjContrast: document.getElementById('adjContrast').value,
+                adjSaturation: document.getElementById('adjSaturation').value,
+                adjBlur: document.getElementById('adjBlur').value,
+                adjSharpness: document.getElementById('adjSharpness').value,
+                adjHue: document.getElementById('adjHue').value,
+                adjGrayscale: document.getElementById('adjGrayscale').classList.contains('active'),
+                adjSepia: document.getElementById('adjSepia').classList.contains('active'),
+                adjInvert: document.getElementById('adjInvert').classList.contains('active'),
+                fxVignette: document.getElementById('fxVignette').value,
+                fxGrain: document.getElementById('fxGrain').value,
+                fxTintColor: document.getElementById('fxTintColor').value,
+                fxTintAmount: document.getElementById('fxTintAmount').value,
+                enableBorder: document.getElementById('enableBorder').checked,
+                borderWidth: document.getElementById('borderWidth').value,
+                borderPadding: document.getElementById('borderPadding').value,
+                borderColor: document.getElementById('borderColor').value,
+                enableBgFill: document.getElementById('enableBgFill').checked,
+                bgFillColor: document.getElementById('bgFillColor').value,
+                rotation: document.getElementById('rotation').value,
+                flipH: document.getElementById('flipH').checked,
+                flipV: document.getElementById('flipV').checked,
+                namingPattern: document.getElementById('namingPattern').value,
+                namingValue: document.getElementById('namingValue').value,
+                stripMetadata: document.getElementById('stripMetadata').checked,
+            };
+        }
+
+        function applyProfileData(d) {
+            if (!d) return;
+            document.getElementById('outputFormat').value = d.outputFormat || 'jpeg';
+            document.getElementById('quality').value = d.quality || 85;
+            document.getElementById('qualityValue').textContent = (d.quality || 85) + '%';
+            document.getElementById('enableResize').checked = !!d.enableResize;
+            document.getElementById('resizeOptions').style.display = d.enableResize ? 'block' : 'none';
+            document.getElementById('resizeMode').value = d.resizeMode || 'dimensions';
+            document.getElementById('resizeWidth').value = d.resizeWidth || '';
+            document.getElementById('resizeHeight').value = d.resizeHeight || '';
+            if (d.resizePercentage) document.getElementById('resizePercentage').value = d.resizePercentage;
+            document.getElementById('maintainAspect').checked = d.maintainAspect !== false;
+            document.getElementById('enableCrop').checked = !!d.enableCrop;
+            document.getElementById('cropOptions').style.display = d.enableCrop ? 'block' : 'none';
+            document.getElementById('cropX').value = d.cropX || '';
+            document.getElementById('cropY').value = d.cropY || '';
+            document.getElementById('cropW').value = d.cropW || '';
+            document.getElementById('cropH').value = d.cropH || '';
+            ['Brightness','Contrast','Saturation','Blur','Sharpness'].forEach(k => {
+                const key = 'adj' + k;
+                document.getElementById(key).value = d[key] || 0;
+                document.getElementById(key + 'Val').textContent = d[key] || 0;
+            });
+            document.getElementById('adjHue').value = d.adjHue || 0;
+            document.getElementById('adjHueVal').innerHTML = (d.adjHue || 0) + '&#176;';
+            document.getElementById('adjGrayscale').classList.toggle('active', !!d.adjGrayscale);
+            document.getElementById('adjSepia').classList.toggle('active', !!d.adjSepia);
+            document.getElementById('adjInvert').classList.toggle('active', !!d.adjInvert);
+            document.getElementById('fxVignette').value = d.fxVignette || 0;
+            document.getElementById('fxVignetteVal').textContent = d.fxVignette || 0;
+            document.getElementById('fxGrain').value = d.fxGrain || 0;
+            document.getElementById('fxGrainVal').textContent = d.fxGrain || 0;
+            document.getElementById('fxTintColor').value = d.fxTintColor || '#ff6600';
+            document.getElementById('fxTintAmount').value = d.fxTintAmount || 0;
+            document.getElementById('fxTintAmountVal').textContent = d.fxTintAmount || 0;
+            document.getElementById('enableBorder').checked = !!d.enableBorder;
+            document.getElementById('borderOptions').style.display = d.enableBorder ? 'block' : 'none';
+            document.getElementById('borderWidth').value = d.borderWidth || 10;
+            document.getElementById('borderWidthVal').textContent = d.borderWidth || 10;
+            document.getElementById('borderPadding').value = d.borderPadding || 0;
+            document.getElementById('borderPaddingVal').textContent = d.borderPadding || 0;
+            document.getElementById('borderColor').value = d.borderColor || '#ffffff';
+            document.getElementById('borderColorText').value = d.borderColor || '#ffffff';
+            document.getElementById('enableBgFill').checked = !!d.enableBgFill;
+            document.getElementById('bgFillOptions').style.display = d.enableBgFill ? 'block' : 'none';
+            document.getElementById('bgFillColor').value = d.bgFillColor || '#ffffff';
+            document.getElementById('bgFillColorText').value = d.bgFillColor || '#ffffff';
+            document.getElementById('rotation').value = d.rotation || '0';
+            document.getElementById('flipH').checked = !!d.flipH;
+            document.getElementById('flipV').checked = !!d.flipV;
+            document.getElementById('namingPattern').value = d.namingPattern || 'original';
+            document.getElementById('namingValue').value = d.namingValue || '';
+            document.getElementById('stripMetadata').checked = d.stripMetadata !== false;
+        }
+
+        function saveProfile() {
+            const name = document.getElementById('profileName').value.trim();
+            if (!name) { showToast('Enter a profile name', 'warning'); return; }
+            const profiles = JSON.parse(localStorage.getItem('if_profiles') || '{}');
+            profiles[name] = getProfileData();
+            localStorage.setItem('if_profiles', JSON.stringify(profiles));
+            document.getElementById('profileName').value = '';
+            renderProfiles();
+            showToast(`Profile "${name}" saved`, 'success');
+        }
+
+        function loadProfile(name) {
+            const profiles = JSON.parse(localStorage.getItem('if_profiles') || '{}');
+            if (profiles[name]) { applyProfileData(profiles[name]); showToast(`Profile "${name}" loaded`, 'success'); }
+        }
+
+        function deleteProfile(name, e) {
+            e.stopPropagation();
+            const profiles = JSON.parse(localStorage.getItem('if_profiles') || '{}');
+            delete profiles[name];
+            localStorage.setItem('if_profiles', JSON.stringify(profiles));
+            renderProfiles();
+            showToast(`Profile deleted`, 'success');
+        }
+
+        function renderProfiles() {
+            const profiles = JSON.parse(localStorage.getItem('if_profiles') || '{}');
+            const list = document.getElementById('profileList');
+            const keys = Object.keys(profiles);
+            if (keys.length === 0) { list.innerHTML = ''; return; }
+            list.innerHTML = keys.map(name => `<div class="profile-item" onclick="loadProfile('${name.replace(/'/g,"\\'")}')">${name}<button class="profile-del" onclick="deleteProfile('${name.replace(/'/g,"\\'")}',event)">x</button></div>`).join('');
+        }
+
+        // === METADATA VIEWER ===
+        function openMetadataViewer() {
+            const sel = images.find(i => i.selected) || images[0];
+            if (!sel) { showToast('No image available', 'warning'); return; }
+            const ext = sel.name.split('.').pop().toUpperCase();
+            const colorDepth = sel.type.includes('png') ? '32-bit RGBA' : sel.type.includes('jpeg') ? '24-bit RGB' : 'Varies';
+            const dpi = Math.round(sel.width / 10 * 2.54) || 72; // rough estimate
+            const aspectW = gcd(sel.width, sel.height);
+            const ar = sel.width && sel.height ? `${sel.width/aspectW}:${sel.height/aspectW}` : 'N/A';
+            const mp = sel.width && sel.height ? ((sel.width * sel.height) / 1000000).toFixed(2) + ' MP' : 'N/A';
+
+            document.getElementById('metadataBody').innerHTML = `
+                <div class="meta-grid">
+                    <span class="meta-key">Filename</span><span class="meta-val">${sel.name}</span>
+                    <span class="meta-key">Format</span><span class="meta-val">${sel.type} (${ext})</span>
+                    <span class="meta-key">Dimensions</span><span class="meta-val">${sel.width} x ${sel.height} px</span>
+                    <span class="meta-key">Megapixels</span><span class="meta-val">${mp}</span>
+                    <span class="meta-key">Aspect Ratio</span><span class="meta-val">${ar}</span>
+                    <span class="meta-key">File Size</span><span class="meta-val">${formatSize(sel.size)}</span>
+                    <span class="meta-key">Color Depth</span><span class="meta-val">${colorDepth}</span>
+                    <span class="meta-key">Est. DPI</span><span class="meta-val">~${dpi}</span>
+                    <span class="meta-key">Data URI Size</span><span class="meta-val">${formatSize(sel.dataUrl.length)}</span>
+                </div>
+                <div style="margin-top:16px;display:flex;gap:6px;">
+                    <button class="btn btn-secondary" style="font-size:11px;" onclick="copyImageDataUri('${sel.id}')">Copy as Data URI</button>
+                </div>`;
+            document.getElementById('metadataModal').classList.add('active');
+        }
+
+        function gcd(a, b) { return b ? gcd(b, a % b) : a; }
+
+        function copyImageDataUri(id) {
+            const img = images.find(i => i.id == id);
+            if (!img) return;
+            navigator.clipboard.writeText(img.dataUrl).then(() => showToast('Data URI copied', 'success')).catch(() => showToast('Copy failed', 'error'));
+        }
+
+        // === BASE64 COPY (converted) ===
+        function copyBase64(id) {
+            const img = convertedImages.find(i => i.id == id);
+            if (!img) return;
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const image = new Image();
+            image.onload = () => {
+                canvas.width = image.width; canvas.height = image.height;
+                ctx.drawImage(image, 0, 0);
+                const dataUri = canvas.toDataURL(getMimeType(img.format));
+                navigator.clipboard.writeText(dataUri).then(() => showToast('Base64 copied', 'success')).catch(() => showToast('Copy failed', 'error'));
+            };
+            image.src = img.url;
+        }
+
+        // === ANNOTATION TOOL ===
+        function openAnnotate() {
+            const sel = images.find(i => i.selected) || images[0];
+            if (!sel) { showToast('No image available', 'warning'); return; }
+            const canvas = document.getElementById('annotateCanvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            img.onload = () => {
+                const maxW = window.innerWidth * 0.8, maxH = window.innerHeight * 0.7;
+                const scale = Math.min(maxW / img.width, maxH / img.height, 1);
+                canvas.width = img.width * scale; canvas.height = img.height * scale;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                annotateState.baseImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                annotateState.history = [];
+                annotateState.imgId = sel.id;
+                annotateState.scale = scale;
+                document.getElementById('annotateOverlay').classList.add('active');
+                setupAnnotateListeners();
+            };
+            img.src = sel.dataUrl;
+        }
+
+        function setAnnotateTool(tool, btn) {
+            annotateState.tool = tool;
+            document.querySelectorAll('.annotate-tool').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        function setupAnnotateListeners() {
+            const canvas = document.getElementById('annotateCanvas');
+            const ctx = canvas.getContext('2d');
+            let tempCanvas = null;
+
+            canvas.onmousedown = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                annotateState.drawing = true;
+                annotateState.startX = e.clientX - rect.left;
+                annotateState.startY = e.clientY - rect.top;
+                // Save current state
+                tempCanvas = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+                if (annotateState.tool === 'freehand') {
+                    ctx.beginPath();
+                    ctx.moveTo(annotateState.startX, annotateState.startY);
+                    ctx.strokeStyle = document.getElementById('annotateColor').value;
+                    ctx.lineWidth = parseInt(document.getElementById('annotateSize').value);
+                    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+                }
+                if (annotateState.tool === 'text') {
+                    const text = prompt('Enter text:');
+                    if (text) {
+                        const size = parseInt(document.getElementById('annotateSize').value) * 6;
+                        ctx.font = `${size}px Arial, sans-serif`;
+                        ctx.fillStyle = document.getElementById('annotateColor').value;
+                        ctx.fillText(text, annotateState.startX, annotateState.startY);
+                        annotateState.history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+                    }
+                    annotateState.drawing = false;
+                }
+            };
+
+            canvas.onmousemove = (e) => {
+                if (!annotateState.drawing) return;
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left, y = e.clientY - rect.top;
+                const color = document.getElementById('annotateColor').value;
+                const size = parseInt(document.getElementById('annotateSize').value);
+
+                if (annotateState.tool === 'freehand') {
+                    ctx.lineTo(x, y); ctx.stroke();
+                } else if (['line', 'arrow', 'rect', 'circle'].includes(annotateState.tool)) {
+                    ctx.putImageData(tempCanvas, 0, 0);
+                    ctx.strokeStyle = color; ctx.lineWidth = size; ctx.lineCap = 'round';
+                    const sx = annotateState.startX, sy = annotateState.startY;
+                    if (annotateState.tool === 'line' || annotateState.tool === 'arrow') {
+                        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(x, y); ctx.stroke();
+                        if (annotateState.tool === 'arrow') {
+                            const angle = Math.atan2(y - sy, x - sx);
+                            const headLen = 15;
+                            ctx.beginPath();
+                            ctx.moveTo(x, y);
+                            ctx.lineTo(x - headLen * Math.cos(angle - Math.PI/6), y - headLen * Math.sin(angle - Math.PI/6));
+                            ctx.moveTo(x, y);
+                            ctx.lineTo(x - headLen * Math.cos(angle + Math.PI/6), y - headLen * Math.sin(angle + Math.PI/6));
+                            ctx.stroke();
+                        }
+                    } else if (annotateState.tool === 'rect') {
+                        ctx.strokeRect(sx, sy, x - sx, y - sy);
+                    } else if (annotateState.tool === 'circle') {
+                        const rx = Math.abs(x - sx) / 2, ry = Math.abs(y - sy) / 2;
+                        ctx.beginPath(); ctx.ellipse(sx + (x-sx)/2, sy + (y-sy)/2, rx, ry, 0, 0, Math.PI*2); ctx.stroke();
+                    }
+                }
+            };
+
+            canvas.onmouseup = () => {
+                if (annotateState.drawing) {
+                    annotateState.drawing = false;
+                    annotateState.history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+                }
+            };
+        }
+
+        function annotateUndo() {
+            const canvas = document.getElementById('annotateCanvas');
+            const ctx = canvas.getContext('2d');
+            if (annotateState.history.length > 0) {
+                annotateState.history.pop();
+                if (annotateState.history.length > 0) ctx.putImageData(annotateState.history[annotateState.history.length - 1], 0, 0);
+                else ctx.putImageData(annotateState.baseImage, 0, 0);
+            }
+        }
+
+        function applyAnnotation() {
+            const canvas = document.getElementById('annotateCanvas');
+            const sel = images.find(i => i.id === annotateState.imgId);
+            if (!sel) return;
+            // Create full-res canvas with annotations overlaid
+            const fullCanvas = document.createElement('canvas');
+            const fullCtx = fullCanvas.getContext('2d');
+            const img = new Image();
+            img.onload = () => {
+                fullCanvas.width = img.width; fullCanvas.height = img.height;
+                fullCtx.drawImage(img, 0, 0);
+                // Overlay annotation scaled up
+                fullCtx.drawImage(canvas, 0, 0, img.width, img.height);
+                sel.dataUrl = fullCanvas.toDataURL('image/png');
+                sel.size = Math.round(sel.dataUrl.length * 0.75);
+                closeAnnotate();
+                renderImageGrid();
+                showToast('Annotations applied', 'success');
+            };
+            img.src = sel.dataUrl;
+        }
+
+        function closeAnnotate() {
+            document.getElementById('annotateOverlay').classList.remove('active');
+            const canvas = document.getElementById('annotateCanvas');
+            canvas.onmousedown = null; canvas.onmousemove = null; canvas.onmouseup = null;
+        }
+
+        // === CONTACT SHEET / COLLAGE ===
+        function openCollage() {
+            if (images.length === 0) { showToast('No images to arrange', 'warning'); return; }
+            collageLoadedImages = [];
+            let loaded = 0;
+            images.forEach((img, idx) => {
+                const i = new Image();
+                i.onload = () => { collageLoadedImages[idx] = i; loaded++; if (loaded === images.length) { document.getElementById('collageOverlay').classList.add('active'); renderCollage(); } };
+                i.src = img.dataUrl;
+            });
+        }
+
+        function renderCollage() {
+            const canvas = document.getElementById('collageCanvas');
+            const ctx = canvas.getContext('2d');
+            const cols = parseInt(document.getElementById('collageCols').value);
+            const spacing = parseInt(document.getElementById('collageSpacing').value);
+            const bg = document.getElementById('collageBg').value;
+            document.getElementById('collageColsVal').textContent = cols;
+            document.getElementById('collageSpacingVal').textContent = spacing;
+
+            const rows = Math.ceil(collageLoadedImages.length / cols);
+            const cellW = 300, cellH = 300;
+            canvas.width = cols * cellW + (cols + 1) * spacing;
+            canvas.height = rows * cellH + (rows + 1) * spacing;
+
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            collageLoadedImages.forEach((img, idx) => {
+                if (!img) return;
+                const col = idx % cols, row = Math.floor(idx / cols);
+                const x = spacing + col * (cellW + spacing);
+                const y = spacing + row * (cellH + spacing);
+                // Cover fit
+                const scale = Math.max(cellW / img.width, cellH / img.height);
+                const sw = cellW / scale, sh = cellH / scale;
+                const sx = (img.width - sw) / 2, sy = (img.height - sh) / 2;
+                ctx.drawImage(img, sx, sy, sw, sh, x, y, cellW, cellH);
+            });
+        }
+
+        function downloadCollage() {
+            const canvas = document.getElementById('collageCanvas');
+            canvas.toBlob((blob) => {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'contact-sheet.png';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                showToast('Contact sheet downloaded', 'success');
+            }, 'image/png');
+        }
+
+        function closeCollage() { document.getElementById('collageOverlay').classList.remove('active'); }
+
+        // === FAVICON GENERATOR ===
+        async function generateFavicons() {
+            const sel = images.find(i => i.selected) || images[0];
+            if (!sel) { showToast('No image available', 'warning'); return; }
+            const sizes = [16, 32, 48, 64, 128, 256];
+            const img = new Image();
+            await new Promise((r, j) => { img.onload = r; img.onerror = j; img.src = sel.dataUrl; });
+
+            if (typeof JSZip === 'undefined') {
+                showToast('Loading ZIP library...', 'warning');
+                await new Promise((r, j) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'; s.onload = r; s.onerror = j; document.head.appendChild(s); });
+            }
+
+            const zip = new JSZip();
+            for (const size of sizes) {
+                const c = document.createElement('canvas');
+                c.width = size; c.height = size;
+                c.getContext('2d').drawImage(img, 0, 0, size, size);
+                const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+                zip.file(`favicon-${size}x${size}.png`, blob);
+            }
+            // Also add ICO for 16,32,48
+            const icoCanvas = document.createElement('canvas');
+            icoCanvas.width = 48; icoCanvas.height = 48;
+            icoCanvas.getContext('2d').drawImage(img, 0, 0, 48, 48);
+            const icoBlob = await new Promise(r => icoCanvas.toBlob(r, 'image/png'));
+            zip.file('favicon.ico.png', icoBlob);
+
+            const blob = await zip.generateAsync({ type: 'blob' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'favicon-bundle.zip';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            showToast(`Favicon bundle (${sizes.join(', ')}px) downloaded`, 'success');
+        }
+
+        // === PDF EXPORT ===
+        async function exportAsPdf() {
+            if (convertedImages.length === 0) { showToast('No converted images', 'warning'); return; }
+            showToast('Generating PDF...', 'warning');
+
+            // Load jsPDF from CDN
+            if (typeof jspdf === 'undefined' && typeof jsPDF === 'undefined') {
+                await new Promise((r, j) => {
+                    const s = document.createElement('script');
+                    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                    s.onload = r; s.onerror = j; document.head.appendChild(s);
+                });
+            }
+
+            const { jsPDF } = window.jspdf || window;
+            const doc = new jsPDF({ unit: 'px', format: 'a4' });
+            const pageW = doc.internal.pageSize.getWidth();
+            const pageH = doc.internal.pageSize.getHeight();
+            const margin = 20;
+            const maxW = pageW - margin * 2;
+            const maxH = pageH - margin * 2;
+
+            for (let i = 0; i < convertedImages.length; i++) {
+                if (i > 0) doc.addPage();
+                const img = convertedImages[i];
+                const scale = Math.min(maxW / img.width, maxH / img.height, 1);
+                const w = img.width * scale, h = img.height * scale;
+                const x = (pageW - w) / 2, y = (pageH - h) / 2;
+                doc.addImage(img.url, img.format === 'png' ? 'PNG' : 'JPEG', x, y, w, h);
+            }
+
+            doc.save('ImageForge-export.pdf');
+            showToast(`PDF exported (${convertedImages.length} pages)`, 'success');
+        }
+
+        // === INIT PROFILES ON LOAD ===
+        renderProfiles();
+    </script>
+</body>
+</html>
